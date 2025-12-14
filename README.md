@@ -7,6 +7,7 @@ An MVP-quality, open-source avatar "speech renderer" platform built with Next.js
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 
 ## Demo Site
+https://xlunar-ai-avatar.vercel.app/
 
 ![Demo Default View](/public/docs/demo-default.png)
 
