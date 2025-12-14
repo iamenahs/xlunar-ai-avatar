@@ -1,6 +1,25 @@
 {
   "name": "xlunar-ai-avatar",
   "version": "0.1.0",
+  "description": "Open-source avatar speech renderer platform with VRM support, TTS integration, and customizable poses/animations",
+  "author": "VaultX.technology",
+  "license": "MIT",
+  "homepage": "https://github.com/vaultx-technology/xlunar-ai-avatar",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vaultx-technology/xlunar-ai-avatar.git"
+  },
+  "keywords": [
+    "avatar",
+    "vrm",
+    "tts",
+    "text-to-speech",
+    "3d",
+    "react",
+    "three.js",
+    "next.js",
+    "animation"
+  ],
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -9,15 +28,22 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@pixiv/three-vrm": "^3.4.4",
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.4.2",
     "next": "16.0.10",
+    "openai": "^6.10.0",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "three": "^0.182.0",
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/three": "^0.182.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
     "tailwindcss": "^4",
