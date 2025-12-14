@@ -38,6 +38,27 @@ export default function DemoPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  
+  // API Key state
+  const [apiKey, setApiKey] = useState<string>("");
+  const [showApiKey, setShowApiKey] = useState(false);
+
+  // Load API key from localStorage on mount
+  useEffect(() => {
+    const savedKey = localStorage.getItem("openai_api_key");
+    if (savedKey) {
+      setApiKey(savedKey);
+    }
+  }, []);
+
+  // Save API key to localStorage when it changes
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem("openai_api_key", apiKey);
+    } else {
+      localStorage.removeItem("openai_api_key");
+    }
+  }, [apiKey]);
 
   // Model/Skin state
   const [selectedSkin, setSelectedSkin] = useState<AvatarSkin>(PRESET_SKINS[0]);
@@ -76,7 +97,13 @@ export default function DemoPageClient() {
     setError(null);
     setIsLoading(true);
     try {
-      const url = await synthesizeToObjectUrl({ text, voice, format, speed });
+      const url = await synthesizeToObjectUrl({ 
+        text, 
+        voice, 
+        format, 
+        speed,
+        apiKey: apiKey.trim() || undefined,
+      });
       const audio = audioRef.current;
       if (!audio) return;
       audio.src = url;
@@ -93,7 +120,7 @@ export default function DemoPageClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [text, voice, format, speed]);
+  }, [text, voice, format, speed, apiKey]);
 
   const handleStop = useCallback(() => {
     const audio = audioRef.current;
@@ -192,6 +219,34 @@ export default function DemoPageClient() {
         {/* Speech Tab */}
         {activeTab === "speech" && (
           <section className="section">
+            {/* API Key Section */}
+            <div className="api-key-section">
+              <div className="api-key-header" onClick={() => setShowApiKey(!showApiKey)}>
+                <span className="api-key-status">
+                  {apiKey ? "🔑 API Key Set" : "⚠️ API Key Required"}
+                </span>
+                <span className="api-key-toggle">{showApiKey ? "▲" : "▼"}</span>
+              </div>
+              {showApiKey && (
+                <div className="api-key-content">
+                  <div className="form-group">
+                    <label>OpenAI API Key</label>
+                    <input
+                      type="password"
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
+                      placeholder="sk-..."
+                      className="api-key-input"
+                    />
+                  </div>
+                  <p className="hint">
+                    Your API key is stored locally in your browser and sent securely to generate speech.
+                    Get your key from <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer">platform.openai.com</a>
+                  </p>
+                </div>
+              )}
+            </div>
+
             <div className="form-group">
               <label>Text to Speak</label>
               <textarea
@@ -665,6 +720,68 @@ export default function DemoPageClient() {
           font-size: 10px;
           color: #555;
           margin: 2px 0;
+        }
+
+        .hint a {
+          color: #00d4ff;
+          text-decoration: none;
+        }
+
+        .hint a:hover {
+          text-decoration: underline;
+        }
+
+        .api-key-section {
+          background: #1a1a1a;
+          border: 1px solid #333;
+          border-radius: 8px;
+          overflow: hidden;
+        }
+
+        .api-key-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 10px 12px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .api-key-header:hover {
+          background: #222;
+        }
+
+        .api-key-status {
+          font-size: 12px;
+          font-weight: 500;
+        }
+
+        .api-key-toggle {
+          font-size: 10px;
+          color: #666;
+        }
+
+        .api-key-content {
+          padding: 12px;
+          border-top: 1px solid #333;
+          background: #151515;
+        }
+
+        .api-key-input {
+          background: #1a1a1a;
+          border: 1px solid #333;
+          border-radius: 6px;
+          padding: 8px 10px;
+          font-size: 13px;
+          color: #e0e0e0;
+          width: 100%;
+          font-family: monospace;
+          transition: border-color 0.2s;
+        }
+
+        .api-key-input:focus {
+          outline: none;
+          border-color: #00d4ff;
         }
 
         @media (max-width: 900px) {

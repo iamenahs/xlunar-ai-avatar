@@ -2,12 +2,12 @@
  * TTS API Route
  * POST /api/tts
  * 
- * Body: { text: string, voice?: string, format?: "mp3"|"wav", speed?: number }
+ * Body: { text: string, voice?: string, format?: "mp3"|"wav", speed?: number, apiKey?: string }
  * Returns: Audio stream with appropriate Content-Type
  */
 
 import { z } from "zod";
-import { getTtsProviderFromEnv, normalizeFormat } from "@/lib/tts/server";
+import { getTtsProvider, normalizeFormat } from "@/lib/tts/server";
 
 // Use Edge runtime for efficient streaming passthrough
 export const runtime = "edge";
@@ -17,6 +17,7 @@ const BodySchema = z.object({
   voice: z.string().optional(),
   format: z.enum(["mp3", "wav"]).optional(),
   speed: z.number().min(0.25).max(4.0).optional(),
+  apiKey: z.string().optional(),
 });
 
 export async function POST(req: Request) {
@@ -24,7 +25,7 @@ export async function POST(req: Request) {
     const json = await req.json();
     const body = BodySchema.parse(json);
 
-    const provider = getTtsProviderFromEnv();
+    const provider = getTtsProvider(body.apiKey);
     const format = normalizeFormat(body.format);
 
     const result = await provider.synthesize({
@@ -44,7 +45,7 @@ export async function POST(req: Request) {
     console.error("[TTS API Error]", err);
     
     const message = err instanceof Error ? err.message : String(err);
-    const status = message.includes("Missing required") ? 500 : 400;
+    const status = message.includes("Missing") || message.includes("API key") ? 400 : 500;
     
     return new Response(message, {
       status,

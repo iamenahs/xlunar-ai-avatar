@@ -29,7 +29,7 @@ export function useAudioAnalyser(
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
+  const dataArrayRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
@@ -156,7 +156,7 @@ export function useAudioAnalyser(
 export function useAudioEnergy(audioRef: React.RefObject<HTMLAudioElement | null>) {
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const dataRef = useRef<Uint8Array | null>(null);
+  const dataRef = useRef<Uint8Array<ArrayBuffer> | null>(null);
   const sourceCreatedRef = useRef(false);
 
   const ensureGraph = useCallback(async () => {

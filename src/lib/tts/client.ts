@@ -10,6 +10,8 @@ export interface SynthesizeParams {
   voice?: string;
   format?: "mp3" | "wav";
   speed?: number;
+  /** Optional API key - if provided, will be sent to the server */
+  apiKey?: string;
 }
 
 /**

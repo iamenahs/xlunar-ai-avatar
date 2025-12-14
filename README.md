@@ -292,16 +292,6 @@ The architecture supports:
 
 ---
 
-## Inspired By
-
-- [Lobe Vidol](https://github.com/lobehub/lobe-vidol) — Product architecture
-- [TalkingHead](https://github.com/met4citizen/TalkingHead) — Modular TTS/lip-sync
-- [VU-VRM](https://github.com/Automattic/VU-VRM) — Amplitude-based animation
-- [r3f-vrm](https://github.com/DavidCks/r3f-vrm) — Manager-based patterns
-- [Avatoon](https://github.com/khaledalam/avatoon) — Component API design
-
----
-
 ## License
 
 MIT License - Copyright (c) 2024 [VaultX.technology](https://vaultx.technology)

@@ -79,7 +79,13 @@ This project is licensed under the **MIT License** - Copyright (c) 2024 [VaultX.
 
 ### Model Licenses
 
-Always check and comply with the license of any 3D model you use:
+All model licenses are included in the [LICENSES/](./LICENSES/) folder:
+
+- **[LICENSE-three-vrm-MIT.txt](./LICENSES/LICENSE-three-vrm-MIT.txt)** - MIT License for pixiv/three-vrm models
+- **[LICENSE-CC0.txt](./LICENSES/LICENSE-CC0.txt)** - CC0 1.0 Universal for public domain models
+- **[ATTRIBUTION.md](./LICENSES/ATTRIBUTION.md)** - Full attribution and source information
+
+### License Quick Reference
 
 | License | Usage | Attribution |
 |---------|-------|-------------|
@@ -92,11 +98,13 @@ Always check and comply with the license of any 3D model you use:
 
 | Model | License | Attribution |
 |-------|---------|-------------|
-| VRM1 Sample Avatar | MIT | pixiv/three-vrm |
-| Seed-san | CC0 | VRM Consortium |
-| Avatar Orion | CC0 | madjin/vrm-samples |
-| Cryptovoxels | CC0 | madjin/vrm-samples |
-| VRoid Samples A-D | CC0 | VRoid Studio by pixiv |
+| VRM1_Constraint_Twist_Sample.vrm | MIT | pixiv/three-vrm |
+| Seed-san.vrm | CC0 | VRM Consortium |
+| Avatar_Orion.vrm | CC0 | madjin/vrm-samples |
+| cryptovoxels.vrm | CC0 | madjin/vrm-samples |
+| VRoid_Sample_A-D.glb | CC0 | VRoid Studio by pixiv |
+
+See [LICENSES/ATTRIBUTION.md](./LICENSES/ATTRIBUTION.md) for complete attribution details.
 
 ## Notes
 
