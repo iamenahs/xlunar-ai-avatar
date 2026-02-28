@@ -223,6 +223,26 @@ export const PRESET_SKINS: AvatarSkin[] = [
     },
   },
   // ============================================================================
+  // LOCAL MODELS (from /public/models/)
+  // ============================================================================
+  {
+    id: "hinase",
+    name: "Hinase",
+    modelUrl: "/models/Hinase.vrm",
+    description: "Hinase VRM character model",
+    tags: ["vrm", "local", "anime"],
+    defaultTransform: {
+      position: [0, 0, 0],
+      rotation: [0, 0, 0],
+      scale: 1,
+    },
+    mouthConfig: {
+      morphTargetName: "aa",
+      sensitivity: 2.0,
+      smoothing: 0.3,
+    },
+  },
+  // ============================================================================
   // CUSTOM / LOCAL OPTIONS
   // ============================================================================
   {

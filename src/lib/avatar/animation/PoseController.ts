@@ -97,6 +97,7 @@ const DEFAULT_RELAXED_POSE: Record<string, [number, number, number]> = {
 
 export class PoseController {
   private vrm: VRM | null = null;
+  private isVrm0 = false;
   
   // Base pose (the static pose before motion offsets)
   private basePose: Record<string, [number, number, number]> = { ...DEFAULT_RELAXED_POSE };
@@ -143,6 +144,16 @@ export class PoseController {
     this.currentPositionY = 0;
     this.positionVelocityY = 0;
     
+    // Ensure the normalized skeleton starts from its canonical rest pose
+    if (vrm.humanoid) {
+      vrm.humanoid.resetNormalizedPose();
+    }
+    
+    // VRM 0.x normalized skeleton has an internal 180° Y rotation on hips,
+    // which inverts the X and Z axes for descendant bones.
+    const metaVersion = (vrm.meta as any)?.metaVersion;
+    this.isVrm0 = metaVersion === '0' || metaVersion === 0;
+
     // Initialize bone states from current VRM pose
     this.initializeBoneStates();
     
@@ -151,7 +162,9 @@ export class PoseController {
   }
   
   /**
-   * Initialize bone states from VRM
+   * Initialize bone states from VRM normalized bones.
+   * VRM normalized bones always start at identity (T-pose), so we
+   * reset everything to zero and let applyPoseImmediate set the relaxed pose.
    */
   private initializeBoneStates(): void {
     if (!this.vrm?.humanoid) return;
@@ -160,14 +173,10 @@ export class PoseController {
       try {
         const bone = this.vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
         if (bone) {
-          const current = {
-            x: bone.rotation.x,
-            y: bone.rotation.y,
-            z: bone.rotation.z,
-          };
+          bone.rotation.set(0, 0, 0);
           this.boneStates.set(boneName, {
-            current: { ...current },
-            target: { ...current },
+            current: { x: 0, y: 0, z: 0 },
+            target: { x: 0, y: 0, z: 0 },
             velocity: { x: 0, y: 0, z: 0 },
           });
         }
@@ -206,6 +215,15 @@ export class PoseController {
   }
 
   /**
+   * Convert rotation from authoring convention to device convention.
+   * VRM 0.x normalized bones have X and Z inverted due to internal 180° Y hip rotation.
+   */
+  private convertRotation(degrees: [number, number, number]): [number, number, number] {
+    if (!this.isVrm0) return degrees;
+    return [-degrees[0], degrees[1], -degrees[2]];
+  }
+
+  /**
    * Apply a pose immediately (no transition)
    */
   private applyPoseImmediate(pose: Record<string, [number, number, number]>): void {
@@ -215,21 +233,23 @@ export class PoseController {
       const vrmBoneName = BONE_MAP[boneName];
       if (!vrmBoneName) continue;
       
+      const converted = this.convertRotation(rotation);
+      
       try {
         const bone = this.vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
         if (bone) {
           bone.rotation.set(
-            degToRad(rotation[0]),
-            degToRad(rotation[1]),
-            degToRad(rotation[2])
+            degToRad(converted[0]),
+            degToRad(converted[1]),
+            degToRad(converted[2])
           );
           
           // Update bone state
           const state = this.boneStates.get(boneName);
           if (state) {
-            state.current.x = degToRad(rotation[0]);
-            state.current.y = degToRad(rotation[1]);
-            state.current.z = degToRad(rotation[2]);
+            state.current.x = degToRad(converted[0]);
+            state.current.y = degToRad(converted[1]);
+            state.current.z = degToRad(converted[2]);
             state.target = { ...state.current };
             state.velocity = { x: 0, y: 0, z: 0 };
           }
@@ -248,22 +268,27 @@ export class PoseController {
   applyPose(pose: PosePreset): void {
     if (!this.vrm?.humanoid) return;
     
-    // Get current pose as starting point
+    // Both fromPose and toPose must be in device convention (converted)
     const fromPose: Record<string, [number, number, number]> = {};
     for (const boneName of Object.keys({ ...this.basePose, ...pose.bones })) {
       const state = this.boneStates.get(boneName);
       if (state) {
+        // state.current is already in device convention radians
         fromPose[boneName] = [
           state.current.x / (Math.PI / 180),
           state.current.y / (Math.PI / 180),
           state.current.z / (Math.PI / 180),
         ];
       } else {
-        fromPose[boneName] = this.basePose[boneName] || [0, 0, 0];
+        fromPose[boneName] = this.convertRotation(this.basePose[boneName] || [0, 0, 0]);
       }
     }
     
-    const toPose = { ...this.basePose, ...pose.bones };
+    const toPoseRaw = { ...this.basePose, ...pose.bones };
+    const toPose: Record<string, [number, number, number]> = {};
+    for (const [k, v] of Object.entries(toPoseRaw)) {
+      toPose[k] = this.convertRotation(v);
+    }
     
     // Set up transition
     this.poseTransition = {
@@ -274,7 +299,7 @@ export class PoseController {
       easing: easeInOutCubic,
     };
     
-    // Update base pose
+    // Store base pose in authoring convention (unconverted)
     this.basePose = { ...this.basePose, ...pose.bones };
   }
 
@@ -534,10 +559,15 @@ export class PoseController {
       const state = this.boneStates.get(boneName);
       
       if (state) {
-        // Gesture overrides the target (higher priority than base pose)
-        state.target.x = degToRad(prevRotation[0] + (targetRotation[0] - prevRotation[0]) * t);
-        state.target.y = degToRad(prevRotation[1] + (targetRotation[1] - prevRotation[1]) * t);
-        state.target.z = degToRad(prevRotation[2] + (targetRotation[2] - prevRotation[2]) * t);
+        const interpolated: [number, number, number] = [
+          prevRotation[0] + (targetRotation[0] - prevRotation[0]) * t,
+          prevRotation[1] + (targetRotation[1] - prevRotation[1]) * t,
+          prevRotation[2] + (targetRotation[2] - prevRotation[2]) * t,
+        ];
+        const converted = this.convertRotation(interpolated);
+        state.target.x = degToRad(converted[0]);
+        state.target.y = degToRad(converted[1]);
+        state.target.z = degToRad(converted[2]);
       }
     }
   }
@@ -585,15 +615,22 @@ export class PoseController {
         break;
     }
 
-    // Apply offsets to bone targets (base pose + offset)
+    // Apply offsets to bone targets (base pose + offset), both in authoring
+    // convention, then convert to device convention.
     for (const [boneName, offset] of Object.entries(offsets)) {
       const basePoseRotation = this.basePose[boneName] || [0, 0, 0];
       const state = this.boneStates.get(boneName);
       
       if (state && !this.poseTransition) {
-        state.target.x = degToRad(basePoseRotation[0] + offset[0]);
-        state.target.y = degToRad(basePoseRotation[1] + offset[1]);
-        state.target.z = degToRad(basePoseRotation[2] + offset[2]);
+        const combined: [number, number, number] = [
+          basePoseRotation[0] + offset[0],
+          basePoseRotation[1] + offset[1],
+          basePoseRotation[2] + offset[2],
+        ];
+        const converted = this.convertRotation(combined);
+        state.target.x = degToRad(converted[0]);
+        state.target.y = degToRad(converted[1]);
+        state.target.z = degToRad(converted[2]);
       }
     }
   }
@@ -895,6 +932,7 @@ export class PoseController {
    */
   dispose(): void {
     this.vrm = null;
+    this.isVrm0 = false;
     this.basePose = { ...DEFAULT_RELAXED_POSE };
     this.currentMotion = null;
     this.gestureAnimation = null;

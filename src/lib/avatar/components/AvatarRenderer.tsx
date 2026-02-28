@@ -48,10 +48,6 @@ export interface AvatarRendererProps {
   isPlaying?: boolean;
 }
 
-function isVrmUrl(url: string): boolean {
-  return url.toLowerCase().endsWith(".vrm");
-}
-
 /**
  * Inner avatar component that handles the actual loading and rendering
  */
@@ -80,15 +76,12 @@ function AvatarInner({
   const lastBodyMotionRef = useRef<string | null>(null);
   const lastSequenceRef = useRef<string | null>(null);
 
-  // Load GLTF with VRM plugin
+  // Load GLTF with VRM plugin (always register — VRoid GLBs contain VRM extensions)
   const gltf = useLoader(
     GLTFLoader,
     appearance.modelUrl,
     (loader) => {
-      // Register VRM plugin if it's a VRM file
-      if (appearance.skinId === "vrm" || isVrmUrl(appearance.modelUrl)) {
-        loader.register((parser) => new VRMLoaderPlugin(parser));
-      }
+      loader.register((parser) => new VRMLoaderPlugin(parser));
     }
   );
 
@@ -109,8 +102,19 @@ function AvatarInner({
     const sceneObj = vrm?.scene ?? gltf.scene;
     if (!sceneObj) return;
 
-    // Add to group
-    group.add(sceneObj);
+    // VRM 0.x meshes face -Z in glTF space. Wrap the scene in a pivot that
+    // rotates it 180° around Y so the character faces the camera. This does
+    // NOT affect normalised-bone local axes, so pose data works identically
+    // for VRM 0.x and 1.0 models.
+    const isVrm0 = vrm && ((vrm.meta as any)?.metaVersion === '0' || (vrm.meta as any)?.metaVersion === 0);
+    if (isVrm0) {
+      const pivot = new THREE.Group();
+      pivot.rotation.y = Math.PI;
+      pivot.add(sceneObj);
+      group.add(pivot);
+    } else {
+      group.add(sceneObj);
+    }
 
     // Store VRM reference
     vrmRef.current = vrm ?? null;
