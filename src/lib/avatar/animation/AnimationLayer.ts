@@ -169,12 +169,12 @@ export class SpeechMouthLayer implements AnimationLayer {
 }
 
 // ============================================================================
-// Idle Body Layer (Now Implemented!)
+// Idle Body Layer
 // ============================================================================
 
 /**
- * IdleBodyLayer - Subtle idle animations
- * Handles blinking and secondary motion
+ * IdleBodyLayer - Subtle idle animations for lifelike presence
+ * Handles blinking, subtle expression drift, and micro eye movements
  */
 export class IdleBodyLayer implements AnimationLayer {
   name = 'idle-body';
@@ -183,9 +183,28 @@ export class IdleBodyLayer implements AnimationLayer {
   
   private vrm: VRM | null = null;
   private elapsed = 0;
+  
+  // Blink state
   private nextBlinkTime = 0;
   private blinkProgress = 0;
   private isBlinking = false;
+  private consecutiveBlinks = 0;
+  private doDoubleBlink = false;
+  
+  // Subtle expression drift
+  private expressionTarget = 0;
+  private expressionCurrent = 0;
+  private expressionVelocity = 0;
+  private nextExpressionChange = 0;
+  
+  // Micro eye look
+  private lookXTarget = 0;
+  private lookYTarget = 0;
+  private lookXCurrent = 0;
+  private lookYCurrent = 0;
+  private lookXVelocity = 0;
+  private lookYVelocity = 0;
+  private nextLookChange = 0;
   
   init(vrm: VRM): void {
     this.vrm = vrm;
@@ -193,10 +212,22 @@ export class IdleBodyLayer implements AnimationLayer {
     this.nextBlinkTime = this.getNextBlinkTime();
     this.blinkProgress = 0;
     this.isBlinking = false;
+    this.consecutiveBlinks = 0;
+    this.doDoubleBlink = false;
+    this.expressionTarget = 0;
+    this.expressionCurrent = 0;
+    this.expressionVelocity = 0;
+    this.nextExpressionChange = 2 + Math.random() * 3;
+    this.lookXTarget = 0;
+    this.lookYTarget = 0;
+    this.lookXCurrent = 0;
+    this.lookYCurrent = 0;
+    this.lookXVelocity = 0;
+    this.lookYVelocity = 0;
+    this.nextLookChange = 0.5 + Math.random() * 2;
   }
   
   private getNextBlinkTime(): number {
-    // Random blink interval: 2-6 seconds (natural human blinking rate)
     return this.elapsed + 2 + Math.random() * 4;
   }
   
@@ -205,60 +236,110 @@ export class IdleBodyLayer implements AnimationLayer {
     
     this.elapsed += delta;
     
-    // Handle blinking
     this.updateBlink(delta);
+    this.updateSubtleExpression(delta);
+    this.updateMicroLook(delta);
   }
   
   private updateBlink(delta: number): void {
     if (!this.vrm?.expressionManager) return;
     
-    // Start blink if it's time
     if (!this.isBlinking && this.elapsed >= this.nextBlinkTime) {
       this.isBlinking = true;
       this.blinkProgress = 0;
+      this.doDoubleBlink = Math.random() < 0.15;
+      this.consecutiveBlinks = 0;
     }
     
     if (this.isBlinking) {
-      // Blink animation: ~150ms total
       const blinkDuration = 0.15;
       this.blinkProgress += delta / blinkDuration;
       
       let blinkValue: number;
-      if (this.blinkProgress < 0.5) {
-        // Closing - fast
-        blinkValue = easeInQuad(this.blinkProgress * 2);
+      if (this.blinkProgress < 0.4) {
+        blinkValue = easeInQuad(this.blinkProgress / 0.4);
+      } else if (this.blinkProgress < 0.5) {
+        blinkValue = 1;
       } else {
-        // Opening - slightly slower
-        blinkValue = 1 - easeOutQuad((this.blinkProgress - 0.5) * 2);
+        blinkValue = 1 - easeOutQuad((this.blinkProgress - 0.5) / 0.5);
       }
       
-      try {
-        this.vrm.expressionManager.setValue('blink' as VRMExpressionPresetName, blinkValue);
-      } catch {
-        // Try alternative names
-        try {
-          this.vrm.expressionManager.setValue('blinkLeft' as VRMExpressionPresetName, blinkValue);
-          this.vrm.expressionManager.setValue('blinkRight' as VRMExpressionPresetName, blinkValue);
-        } catch {
-          // No blink expression available
-        }
-      }
+      this.setBlinkExpression(Math.max(0, Math.min(1, blinkValue)));
       
       if (this.blinkProgress >= 1) {
-        this.isBlinking = false;
-        this.nextBlinkTime = this.getNextBlinkTime();
-        // Ensure blink is reset
-        try {
-          this.vrm.expressionManager.setValue('blink' as VRMExpressionPresetName, 0);
-        } catch {
-          try {
-            this.vrm.expressionManager.setValue('blinkLeft' as VRMExpressionPresetName, 0);
-            this.vrm.expressionManager.setValue('blinkRight' as VRMExpressionPresetName, 0);
-          } catch {
-            // No blink expression available
-          }
+        this.consecutiveBlinks++;
+        if (this.doDoubleBlink && this.consecutiveBlinks < 2) {
+          this.blinkProgress = 0;
+        } else {
+          this.isBlinking = false;
+          this.nextBlinkTime = this.getNextBlinkTime();
+          this.setBlinkExpression(0);
         }
       }
+    }
+  }
+  
+  private setBlinkExpression(value: number): void {
+    if (!this.vrm?.expressionManager) return;
+    try {
+      this.vrm.expressionManager.setValue('blink' as VRMExpressionPresetName, value);
+    } catch {
+      try {
+        this.vrm.expressionManager.setValue('blinkLeft' as VRMExpressionPresetName, value);
+        this.vrm.expressionManager.setValue('blinkRight' as VRMExpressionPresetName, value);
+      } catch {
+        // No blink expression available
+      }
+    }
+  }
+  
+  private updateSubtleExpression(delta: number): void {
+    if (!this.vrm?.expressionManager) return;
+    
+    if (this.elapsed >= this.nextExpressionChange) {
+      this.expressionTarget = Math.random() * 0.15;
+      this.nextExpressionChange = this.elapsed + 4 + Math.random() * 6;
+    }
+    
+    const velRef = { value: this.expressionVelocity };
+    this.expressionCurrent = smoothDamp(
+      this.expressionCurrent,
+      this.expressionTarget,
+      velRef,
+      1.5,
+      delta
+    );
+    this.expressionVelocity = velRef.value;
+    
+    try {
+      this.vrm.expressionManager.setValue('happy' as VRMExpressionPresetName, this.expressionCurrent);
+    } catch {
+      // Expression not available
+    }
+  }
+  
+  private updateMicroLook(delta: number): void {
+    if (!this.vrm?.lookAt) return;
+    
+    if (this.elapsed >= this.nextLookChange) {
+      this.lookXTarget = (Math.random() - 0.5) * 6;
+      this.lookYTarget = (Math.random() - 0.5) * 4;
+      this.nextLookChange = this.elapsed + 1 + Math.random() * 3;
+    }
+    
+    const velXRef = { value: this.lookXVelocity };
+    const velYRef = { value: this.lookYVelocity };
+    this.lookXCurrent = smoothDamp(this.lookXCurrent, this.lookXTarget, velXRef, 0.4, delta);
+    this.lookYCurrent = smoothDamp(this.lookYCurrent, this.lookYTarget, velYRef, 0.4, delta);
+    this.lookXVelocity = velXRef.value;
+    this.lookYVelocity = velYRef.value;
+    
+    try {
+      (this.vrm.lookAt as any).target = undefined;
+      (this.vrm.lookAt as any).autoUpdate = false;
+      this.vrm.lookAt.applier?.applyYawPitch(this.lookXCurrent, this.lookYCurrent);
+    } catch {
+      // LookAt not supported
     }
   }
   
@@ -299,7 +380,7 @@ export class GestureLayer implements AnimationLayer {
   private triggerGesture(gesture: string): void {
     this.currentGesture = gesture;
     // Gesture animation is handled by PoseController now
-    console.log(`[GestureLayer] Gesture triggered: ${gesture}`);
+    // Gesture animation is handled by PoseController
   }
   
   dispose(): void {

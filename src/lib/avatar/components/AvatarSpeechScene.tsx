@@ -14,6 +14,7 @@ import { AvatarRenderer } from "./AvatarRenderer";
 import { useAudioEnergy } from "../hooks/useAudioAnalyser";
 import type { AvatarTransform, AppearanceConfig, MouthAnimationConfig } from "../types";
 import type { PosePreset, HandGesture, BodyGesture, BodyMotion } from "../config/poses";
+import type { MotionSequenceDefinition } from "../animation/MotionSequence";
 
 export interface AvatarSpeechSceneProps {
   /** Model appearance config */
@@ -32,6 +33,10 @@ export interface AvatarSpeechSceneProps {
   bodyGesture?: BodyGesture | null;
   /** Body motion (continuous) */
   bodyMotion?: BodyMotion | null;
+  /** Motion sequence to play */
+  motionSequence?: MotionSequenceDefinition | null;
+  /** Callback when a motion sequence completes */
+  onSequenceComplete?: () => void;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
 }
@@ -45,6 +50,8 @@ export function AvatarSpeechScene({
   handGesture,
   bodyGesture,
   bodyMotion,
+  motionSequence,
+  onSequenceComplete,
   onLoad,
 }: AvatarSpeechSceneProps) {
   const { ensureGraph, getEnergy } = useAudioEnergy(audioRef);
@@ -90,6 +97,8 @@ export function AvatarSpeechScene({
       handGesture={handGesture}
       bodyGesture={bodyGesture}
       bodyMotion={bodyMotion}
+      motionSequence={motionSequence}
+      onSequenceComplete={onSequenceComplete}
       onLoad={handleLoad}
       amplitudeRef={amplitudeRef}
       isPlayingRef={isPlayingRef}
@@ -108,6 +117,8 @@ function AvatarRendererWithAmplitude({
   handGesture,
   bodyGesture,
   bodyMotion,
+  motionSequence,
+  onSequenceComplete,
   onLoad,
   amplitudeRef,
   isPlayingRef,
@@ -119,6 +130,8 @@ function AvatarRendererWithAmplitude({
   handGesture?: HandGesture | null;
   bodyGesture?: BodyGesture | null;
   bodyMotion?: BodyMotion | null;
+  motionSequence?: MotionSequenceDefinition | null;
+  onSequenceComplete?: () => void;
   onLoad?: (vrm: VRM) => void;
   amplitudeRef: React.RefObject<number>;
   isPlayingRef: React.RefObject<boolean>;
@@ -147,6 +160,8 @@ function AvatarRendererWithAmplitude({
       handGesture={handGesture}
       bodyGesture={bodyGesture}
       bodyMotion={bodyMotion}
+      motionSequence={motionSequence}
+      onSequenceComplete={onSequenceComplete}
       onLoad={onLoad}
       amplitude={state.amplitude}
       isPlaying={state.isPlaying}

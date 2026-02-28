@@ -5,7 +5,7 @@
  * Demonstrates all avatar customization options
  */
 
-import React, { useRef, useState, useCallback, useEffect } from "react";
+import React, { useRef, useState, useCallback, useEffect, useMemo } from "react";
 import {
   AvatarStage,
   AvatarSpeechScene,
@@ -16,6 +16,7 @@ import {
   HAND_GESTURES,
   BODY_GESTURES,
   BODY_MOTIONS,
+  MOTION_SEQUENCES,
   type AvatarSkin,
   type BackgroundPreset,
   type CameraPreset,
@@ -23,6 +24,7 @@ import {
   type HandGesture,
   type BodyGesture,
   type BodyMotion,
+  type MotionSequenceDefinition,
 } from "@/lib/avatar";
 import { synthesizeToObjectUrl } from "@/lib/tts/client";
 
@@ -82,8 +84,12 @@ export default function DemoPageClient() {
     BODY_MOTIONS.find(m => m.id === "idleNatural") || BODY_MOTIONS[BODY_MOTIONS.length - 1]
   );
 
+  // Motion Sequence state
+  const [activeSequence, setActiveSequence] = useState<MotionSequenceDefinition | null>(null);
+  const [sequencePlaying, setSequencePlaying] = useState(false);
+
   // Active tab
-  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "environment">("speech");
+  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "environment">("speech");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -91,6 +97,20 @@ export default function DemoPageClient() {
   const effectiveModelUrl = selectedSkin.id === "custom" 
     ? customModelUrl 
     : selectedSkin.modelUrl;
+
+  // Memoize mouthConfig to prevent setup useEffect from re-running every render
+  const mouthConfig = useMemo(() => selectedSkin.mouthConfig || {
+    threshold: 0.01,
+    sensitivity: 2.0,
+    smoothing: 0.3,
+    maxOpen: 1.0,
+  }, [selectedSkin.mouthConfig]);
+
+  // Memoize onSequenceComplete to prevent useEffect re-runs
+  const handleSequenceComplete = useCallback(() => {
+    setActiveSequence(null);
+    setSequencePlaying(false);
+  }, []);
 
   const handleSpeak = useCallback(async () => {
     if (!text.trim()) return;
@@ -161,16 +181,13 @@ export default function DemoPageClient() {
                 scale: avatarScale,
               }}
               audioRef={audioRef}
-              mouthConfig={selectedSkin.mouthConfig || {
-                threshold: 0.01,
-                sensitivity: 2.0,
-                smoothing: 0.3,
-                maxOpen: 1.0,
-              }}
+              mouthConfig={mouthConfig}
               pose={selectedPose}
               handGesture={selectedHandGesture}
               bodyGesture={selectedBodyGesture}
               bodyMotion={selectedBodyMotion}
+              motionSequence={activeSequence}
+              onSequenceComplete={handleSequenceComplete}
             />
           </AvatarStage>
         )}
@@ -207,6 +224,12 @@ export default function DemoPageClient() {
             onClick={() => setActiveTab("pose")}
           >
             🤸 Pose
+          </button>
+          <button 
+            className={`tab ${activeTab === "sequences" ? "active" : ""}`}
+            onClick={() => setActiveTab("sequences")}
+          >
+            🎬 Combos
           </button>
           <button 
             className={`tab ${activeTab === "environment" ? "active" : ""}`}
@@ -416,6 +439,62 @@ export default function DemoPageClient() {
           </section>
         )}
 
+        {/* Sequences Tab */}
+        {activeTab === "sequences" && (
+          <section className="section">
+            <h3>🎬 Motion Sequences ({MOTION_SEQUENCES.length})</h3>
+            <p className="hint" style={{ marginBottom: 8 }}>
+              Each sequence is a choreographed combination of poses, gestures, and facial expressions that play out over time.
+            </p>
+
+            {(["emotion", "social", "thinking", "reaction", "presentation"] as const).map((cat) => {
+              const seqs = MOTION_SEQUENCES.filter(s => s.category === cat);
+              if (seqs.length === 0) return null;
+              return (
+                <div key={cat}>
+                  <h3 style={{ textTransform: "capitalize" }}>
+                    {cat === "emotion" ? "💫" : cat === "social" ? "👋" : cat === "thinking" ? "🤔" : cat === "reaction" ? "😲" : "📊"} {cat}
+                  </h3>
+                  <div className="sequence-grid">
+                    {seqs.map((seq) => {
+                      const isActive = activeSequence?.id === seq.id && sequencePlaying;
+                      return (
+                        <button
+                          key={seq.id}
+                          className={`sequence-btn ${isActive ? "playing" : ""}`}
+                          onClick={() => {
+                            if (isActive) {
+                              setActiveSequence(null);
+                              setSequencePlaying(false);
+                            } else {
+                              setActiveSequence(null);
+                              setSequencePlaying(false);
+                              setTimeout(() => {
+                                setActiveSequence(seq);
+                                setSequencePlaying(true);
+                              }, 50);
+                            }
+                          }}
+                          title={seq.description}
+                        >
+                          <span className="sequence-name">{seq.name}</span>
+                          <span className="sequence-desc">{seq.description}</span>
+                          <span className="sequence-steps">{seq.steps.length} steps</span>
+                          {isActive && <span className="sequence-indicator">Playing...</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="info-box">
+              <strong>How it works:</strong> Click a sequence to play it. The avatar will perform the full choreographed motion and return to its idle pose. Click again to stop early.
+            </div>
+          </section>
+        )}
+
         {/* Environment Tab */}
         {activeTab === "environment" && (
           <section className="section">
@@ -450,7 +529,7 @@ export default function DemoPageClient() {
 
         <footer className="footer">
           <p className="hint">
-            📊 Total Customizations: {PRESET_SKINS.length} skins • {POSE_PRESETS.length} poses • {HAND_GESTURES.length} hand gestures • {BODY_GESTURES.length} body gestures • {BODY_MOTIONS.length} motions • {BACKGROUND_PRESETS.length} backgrounds • {CAMERA_PRESETS.length} cameras
+            📊 Customizations: {PRESET_SKINS.length} skins • {POSE_PRESETS.length} poses • {HAND_GESTURES.length} hand gestures • {BODY_GESTURES.length} body gestures • {BODY_MOTIONS.length} motions • {MOTION_SEQUENCES.length} sequences • {BACKGROUND_PRESETS.length} backgrounds • {CAMERA_PRESETS.length} cameras
           </p>
         </footer>
 
@@ -708,6 +787,77 @@ export default function DemoPageClient() {
           padding: 2px 4px;
           border-radius: 3px;
           font-family: monospace;
+        }
+
+        .sequence-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .sequence-btn {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 3px;
+          padding: 10px 12px;
+          font-size: 12px;
+          background: #1a1a1a;
+          border: 1px solid #333;
+          text-align: left;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .sequence-btn:hover {
+          background: #222;
+          border-color: #555;
+        }
+
+        .sequence-btn.playing {
+          background: linear-gradient(135deg, rgba(0,212,255,0.12) 0%, rgba(124,58,237,0.12) 100%);
+          border-color: #00d4ff;
+        }
+
+        .sequence-btn.playing::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #00d4ff, #7c3aed);
+          animation: sequenceProgress 4s linear forwards;
+        }
+
+        @keyframes sequenceProgress {
+          from { width: 0%; }
+          to { width: 100%; }
+        }
+
+        .sequence-name {
+          font-weight: 600;
+          color: #e0e0e0;
+          font-size: 13px;
+        }
+
+        .sequence-desc {
+          color: #888;
+          font-size: 11px;
+        }
+
+        .sequence-steps {
+          color: #555;
+          font-size: 10px;
+        }
+
+        .sequence-indicator {
+          position: absolute;
+          right: 10px;
+          top: 50%;
+          transform: translateY(-50%);
+          color: #00d4ff;
+          font-size: 10px;
+          font-weight: 600;
         }
 
         .footer {

@@ -44,3 +44,11 @@ export type {
   BodyGesture,
   BodyMotion,
 } from './poses';
+
+// Motion sequences
+export {
+  MOTION_SEQUENCES,
+  getSequenceById,
+  getSequencesByCategory,
+} from './sequences';
+

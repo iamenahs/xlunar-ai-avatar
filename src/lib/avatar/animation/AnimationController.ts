@@ -111,8 +111,8 @@ export class AnimationController {
       }
     }
     
-    // Update VRM (required for expression changes to take effect)
-    this.vrm.update(delta);
+    // NOTE: vrm.update() is now called externally in AvatarRenderer
+    // after PoseController has applied bone rotations
   }
   
   /**

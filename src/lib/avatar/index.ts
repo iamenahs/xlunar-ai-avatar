@@ -115,6 +115,10 @@ export {
   getBodyMotionById,
   applyPoseToVRM,
   degToRad,
+  // Motion sequences
+  MOTION_SEQUENCES,
+  getSequenceById,
+  getSequencesByCategory,
 } from "./config";
 
 export type {
@@ -132,6 +136,17 @@ export {
   PoseController,
   createPoseController,
 } from "./animation/PoseController";
+
+// Motion Sequence
+export {
+  MotionSequencePlayer,
+} from "./animation/MotionSequence";
+
+export type {
+  MotionSequenceDefinition,
+  MotionStep,
+  ExpressionState,
+} from "./animation/MotionSequence";
 
 // Easing utilities (for custom animations)
 export {

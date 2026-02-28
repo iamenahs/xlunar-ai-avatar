@@ -79,15 +79,13 @@ interface PoseTransition {
 // ============================================================================
 
 const DEFAULT_RELAXED_POSE: Record<string, [number, number, number]> = {
-  // Arms relaxed at sides - more aggressive angles for natural look
-  // VRM T-pose has arms at 0°, we want them pointing down ~70° from horizontal
-  leftUpperArm: [20, 0, -70],
-  rightUpperArm: [20, 0, 70],
-  // Forearms slightly bent inward
-  leftLowerArm: [0, 0, -15],
-  rightLowerArm: [0, 0, 15],
-  // Slight natural stance
-  spine: [2, 0, 0],  // Very slight forward lean
+  // Arms hanging naturally at sides, perpendicular to ground
+  // Z brings arm down from T-pose horizontal; X=0 avoids pushing arms behind body
+  leftUpperArm: [0, 0, -78],
+  rightUpperArm: [0, 0, 78],
+  leftLowerArm: [0, 0, -5],
+  rightLowerArm: [0, 0, 5],
+  spine: [2, 0, 0],
   chest: [0, 0, 0],
   neck: [0, 0, 0],
   head: [0, 0, 0],
@@ -131,6 +129,7 @@ export class PoseController {
   // Configuration
   private transitionDuration = 0.4; // seconds for pose transitions
   private smoothTime = 0.15; // seconds for smooth damp
+  private defaultSmoothTime = 0.15;
 
   /**
    * Initialize with a VRM model
@@ -193,6 +192,20 @@ export class PoseController {
   }
 
   /**
+   * Set smooth damp time (lower = snappier response)
+   */
+  setSmoothTime(time: number): void {
+    this.smoothTime = time;
+  }
+
+  /**
+   * Reset smooth time to default
+   */
+  resetSmoothTime(): void {
+    this.smoothTime = this.defaultSmoothTime;
+  }
+
+  /**
    * Apply a pose immediately (no transition)
    */
   private applyPoseImmediate(pose: Record<string, [number, number, number]>): void {
@@ -250,10 +263,12 @@ export class PoseController {
       }
     }
     
+    const toPose = { ...this.basePose, ...pose.bones };
+    
     // Set up transition
     this.poseTransition = {
       fromPose,
-      toPose: { ...this.basePose, ...pose.bones },
+      toPose,
       startTime: this.elapsedTime,
       duration: this.transitionDuration,
       easing: easeInOutCubic,
@@ -576,7 +591,6 @@ export class PoseController {
       const state = this.boneStates.get(boneName);
       
       if (state && !this.poseTransition) {
-        // Only apply if not transitioning between poses
         state.target.x = degToRad(basePoseRotation[0] + offset[0]);
         state.target.y = degToRad(basePoseRotation[1] + offset[1]);
         state.target.z = degToRad(basePoseRotation[2] + offset[2]);
@@ -608,16 +622,16 @@ export class PoseController {
       0
     ];
     
-    // Subtle shoulder rise during inhale
+    // Very subtle shoulder rise during inhale (keep small to avoid drifting arms)
     offsets.leftUpperArm = [
-      -breathValue * amplitude * 0.1,
       0,
-      -breathValue * amplitude * 0.15
+      0,
+      -breathValue * amplitude * 0.08
     ];
     offsets.rightUpperArm = [
-      -breathValue * amplitude * 0.1,
       0,
-      breathValue * amplitude * 0.15
+      0,
+      breathValue * amplitude * 0.08
     ];
   }
 
@@ -842,7 +856,6 @@ export class PoseController {
         const bone = this.vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
         if (!bone) continue;
         
-        // Use smooth damp for each axis
         const velX = { value: state.velocity.x };
         const velY = { value: state.velocity.y };
         const velZ = { value: state.velocity.z };
@@ -855,7 +868,6 @@ export class PoseController {
         state.velocity.y = velY.value;
         state.velocity.z = velZ.value;
         
-        // Apply to bone
         bone.rotation.set(state.current.x, state.current.y, state.current.z);
       } catch {
         // Bone not found

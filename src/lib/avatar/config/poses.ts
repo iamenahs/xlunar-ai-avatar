@@ -65,10 +65,10 @@ export const POSE_PRESETS: PosePreset[] = [
     description: "Natural standing pose with arms relaxed at sides",
     bones: {
       spine: [2, 0, 0],
-      leftUpperArm: [20, 0, -70],
-      rightUpperArm: [20, 0, 70],
-      leftLowerArm: [0, 0, -15],
-      rightLowerArm: [0, 0, 15],
+      leftUpperArm: [0, 0, -78],
+      rightUpperArm: [0, 0, 78],
+      leftLowerArm: [0, 0, -5],
+      rightLowerArm: [0, 0, 5],
     },
   },
   {
@@ -77,10 +77,10 @@ export const POSE_PRESETS: PosePreset[] = [
     description: "Confident pose with hands on hips",
     bones: {
       spine: [0, 0, 0],
-      leftUpperArm: [25, 40, -60],
-      rightUpperArm: [25, -40, 60],
-      leftLowerArm: [0, 0, -90],
-      rightLowerArm: [0, 0, 90],
+      leftUpperArm: [0, 35, -55],
+      rightUpperArm: [0, -35, 55],
+      leftLowerArm: [0, 0, -80],
+      rightLowerArm: [0, 0, 80],
     },
   },
   {
@@ -89,10 +89,10 @@ export const POSE_PRESETS: PosePreset[] = [
     description: "Arms crossed in front of chest",
     bones: {
       spine: [0, 0, 0],
-      leftUpperArm: [30, 50, -70],
-      rightUpperArm: [30, -50, 70],
-      leftLowerArm: [0, 30, -100],
-      rightLowerArm: [0, -30, 100],
+      leftUpperArm: [-20, 40, -50],
+      rightUpperArm: [-20, -40, 50],
+      leftLowerArm: [0, 30, -85],
+      rightLowerArm: [0, -30, 85],
     },
   },
   {
@@ -101,10 +101,10 @@ export const POSE_PRESETS: PosePreset[] = [
     description: "Hand on chin thinking pose",
     bones: {
       head: [5, -10, 0],
-      leftUpperArm: [15, 0, -25],
-      rightUpperArm: [60, -30, 70],
-      leftLowerArm: [-5, 0, -15],
-      rightLowerArm: [0, -20, 120],
+      leftUpperArm: [0, 0, -70],
+      rightUpperArm: [-40, -25, 55],
+      leftLowerArm: [0, 0, -10],
+      rightLowerArm: [0, -20, 110],
     },
   },
   {
@@ -113,10 +113,10 @@ export const POSE_PRESETS: PosePreset[] = [
     description: "One arm extended presenting gesture",
     bones: {
       spine: [0, -5, 0],
-      leftUpperArm: [15, 0, -25],
-      rightUpperArm: [0, 0, 60],
-      leftLowerArm: [-5, 0, -15],
-      rightLowerArm: [-15, 0, 15],
+      leftUpperArm: [0, 0, -70],
+      rightUpperArm: [-10, 0, 50],
+      leftLowerArm: [0, 0, -8],
+      rightLowerArm: [-10, 0, 10],
     },
   },
   {
@@ -124,8 +124,10 @@ export const POSE_PRESETS: PosePreset[] = [
     name: "Waving",
     description: "Arm raised in waving position",
     bones: {
-      rightUpperArm: [-30, 0, 120],
-      rightLowerArm: [-15, 0, 30],
+      leftUpperArm: [0, 0, -78],
+      leftLowerArm: [0, 0, -5],
+      rightUpperArm: [-30, 0, 30],
+      rightLowerArm: [-15, 0, 25],
     },
   },
 ];
@@ -305,43 +307,43 @@ export const BODY_GESTURES: BodyGesture[] = [
       {
         time: 0,
         bones: {
-          rightUpperArm: [0, 0, 90],
-          rightLowerArm: [0, 0, 0],
+          rightUpperArm: [0, 0, 78],
+          rightLowerArm: [0, 0, 5],
         },
       },
       {
         time: 0.2,
         bones: {
-          rightUpperArm: [-30, 0, 120],
-          rightLowerArm: [-15, 0, 30],
+          rightUpperArm: [-20, 0, 30],
+          rightLowerArm: [-10, 0, 25],
         },
       },
       {
         time: 0.4,
         bones: {
-          rightUpperArm: [-30, 0, 120],
-          rightLowerArm: [-15, 30, 30],
+          rightUpperArm: [-20, 0, 30],
+          rightLowerArm: [-10, 25, 25],
         },
       },
       {
         time: 0.6,
         bones: {
-          rightUpperArm: [-30, 0, 120],
-          rightLowerArm: [-15, -30, 30],
+          rightUpperArm: [-20, 0, 30],
+          rightLowerArm: [-10, -25, 25],
         },
       },
       {
         time: 0.8,
         bones: {
-          rightUpperArm: [-30, 0, 120],
-          rightLowerArm: [-15, 20, 30],
+          rightUpperArm: [-20, 0, 30],
+          rightLowerArm: [-10, 18, 25],
         },
       },
       {
         time: 1,
         bones: {
-          rightUpperArm: [0, 0, 90],
-          rightLowerArm: [0, 0, 0],
+          rightUpperArm: [0, 0, 78],
+          rightLowerArm: [0, 0, 5],
         },
       },
     ],
@@ -356,31 +358,37 @@ export const BODY_GESTURES: BodyGesture[] = [
       {
         time: 0,
         bones: {
-          leftUpperArm: [0, 0, -45],
-          rightUpperArm: [0, 0, 45],
+          leftUpperArm: [0, 0, -78],
+          rightUpperArm: [0, 0, 78],
         },
       },
       {
         time: 0.3,
         bones: {
-          leftUpperArm: [-20, 0, -60],
-          rightUpperArm: [-20, 0, 60],
+          leftUpperArm: [-10, 0, -55],
+          rightUpperArm: [-10, 0, 55],
+          leftLowerArm: [0, 0, -20],
+          rightLowerArm: [0, 0, 20],
           head: [0, 0, 5],
         },
       },
       {
         time: 0.7,
         bones: {
-          leftUpperArm: [-20, 0, -60],
-          rightUpperArm: [-20, 0, 60],
+          leftUpperArm: [-10, 0, -55],
+          rightUpperArm: [-10, 0, 55],
+          leftLowerArm: [0, 0, -20],
+          rightLowerArm: [0, 0, 20],
           head: [0, 0, 5],
         },
       },
       {
         time: 1,
         bones: {
-          leftUpperArm: [0, 0, -45],
-          rightUpperArm: [0, 0, 45],
+          leftUpperArm: [0, 0, -78],
+          rightUpperArm: [0, 0, 78],
+          leftLowerArm: [0, 0, -5],
+          rightLowerArm: [0, 0, 5],
           head: [0, 0, 0],
         },
       },
@@ -393,10 +401,10 @@ export const BODY_GESTURES: BodyGesture[] = [
     duration: 1500,
     loop: false,
     keyframes: [
-      { time: 0, bones: { spine: [0, 0, 0], head: [0, 0, 0] } },
-      { time: 0.3, bones: { spine: [30, 0, 0], head: [15, 0, 0] } },
-      { time: 0.7, bones: { spine: [30, 0, 0], head: [15, 0, 0] } },
-      { time: 1, bones: { spine: [0, 0, 0], head: [0, 0, 0] } },
+      { time: 0, bones: { spine: [2, 0, 0], head: [0, 0, 0], leftUpperArm: [0, 0, -78], rightUpperArm: [0, 0, 78] } },
+      { time: 0.3, bones: { spine: [25, 0, 0], head: [10, 0, 0], leftUpperArm: [5, 0, -75], rightUpperArm: [5, 0, 75] } },
+      { time: 0.7, bones: { spine: [25, 0, 0], head: [10, 0, 0], leftUpperArm: [5, 0, -75], rightUpperArm: [5, 0, 75] } },
+      { time: 1, bones: { spine: [2, 0, 0], head: [0, 0, 0], leftUpperArm: [0, 0, -78], rightUpperArm: [0, 0, 78] } },
     ],
   },
   {
@@ -409,28 +417,28 @@ export const BODY_GESTURES: BodyGesture[] = [
       {
         time: 0,
         bones: {
-          leftUpperArm: [30, 40, -50],
-          rightUpperArm: [30, -40, 50],
-          leftLowerArm: [0, 20, -70],
-          rightLowerArm: [0, -20, 70],
+          leftUpperArm: [-20, 35, -45],
+          rightUpperArm: [-20, -35, 45],
+          leftLowerArm: [0, 20, -65],
+          rightLowerArm: [0, -20, 65],
         },
       },
       {
         time: 0.5,
         bones: {
-          leftUpperArm: [30, 40, -50],
-          rightUpperArm: [30, -40, 50],
-          leftLowerArm: [0, 40, -90],
-          rightLowerArm: [0, -40, 90],
+          leftUpperArm: [-20, 35, -45],
+          rightUpperArm: [-20, -35, 45],
+          leftLowerArm: [0, 35, -80],
+          rightLowerArm: [0, -35, 80],
         },
       },
       {
         time: 1,
         bones: {
-          leftUpperArm: [30, 40, -50],
-          rightUpperArm: [30, -40, 50],
-          leftLowerArm: [0, 20, -70],
-          rightLowerArm: [0, -20, 70],
+          leftUpperArm: [-20, 35, -45],
+          rightUpperArm: [-20, -35, 45],
+          leftLowerArm: [0, 20, -65],
+          rightLowerArm: [0, -20, 65],
         },
       },
     ],
@@ -445,33 +453,39 @@ export const BODY_GESTURES: BodyGesture[] = [
       {
         time: 0,
         bones: {
-          leftUpperArm: [0, 0, -45],
-          rightUpperArm: [0, 0, 45],
+          leftUpperArm: [0, 0, -78],
+          rightUpperArm: [0, 0, 78],
         },
       },
       {
         time: 0.4,
         bones: {
-          leftUpperArm: [-60, 0, -150],
-          rightUpperArm: [-60, 0, 150],
-          leftLowerArm: [0, 0, -30],
-          rightLowerArm: [0, 0, 30],
+          leftUpperArm: [-15, 0, 15],
+          rightUpperArm: [-15, 0, -15],
+          leftLowerArm: [0, 0, -25],
+          rightLowerArm: [0, 0, 25],
+          head: [-5, 0, 0],
+          chest: [-2, 0, 0],
         },
       },
       {
         time: 0.7,
         bones: {
-          leftUpperArm: [-60, 10, -150],
-          rightUpperArm: [-60, -10, 150],
-          leftLowerArm: [0, 0, -30],
-          rightLowerArm: [0, 0, 30],
+          leftUpperArm: [-15, 8, 15],
+          rightUpperArm: [-15, -8, -15],
+          leftLowerArm: [0, 0, -25],
+          rightLowerArm: [0, 0, 25],
+          head: [-5, 0, 0],
+          chest: [-2, 0, 0],
         },
       },
       {
         time: 1,
         bones: {
-          leftUpperArm: [0, 0, -45],
-          rightUpperArm: [0, 0, 45],
+          leftUpperArm: [0, 0, -78],
+          rightUpperArm: [0, 0, 78],
+          head: [0, 0, 0],
+          chest: [0, 0, 0],
         },
       },
     ],

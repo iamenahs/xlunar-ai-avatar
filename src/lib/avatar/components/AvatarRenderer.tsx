@@ -14,8 +14,10 @@ import { VRMLoaderPlugin, VRM } from "@pixiv/three-vrm";
 
 import type { AvatarTransform, AppearanceConfig, MouthAnimationConfig } from "../types";
 import type { PosePreset, HandGesture, BodyGesture, BodyMotion } from "../config/poses";
+import type { MotionSequenceDefinition } from "../animation/MotionSequence";
 import { AnimationController, createAnimationController } from "../animation/AnimationController";
 import { PoseController, createPoseController } from "../animation/PoseController";
+import { MotionSequencePlayer } from "../animation/MotionSequence";
 
 export interface AvatarRendererProps {
   /** Model appearance config (URL required) */
@@ -32,6 +34,10 @@ export interface AvatarRendererProps {
   bodyGesture?: BodyGesture | null;
   /** Body motion (continuous) */
   bodyMotion?: BodyMotion | null;
+  /** Motion sequence to play */
+  motionSequence?: MotionSequenceDefinition | null;
+  /** Callback when a motion sequence completes */
+  onSequenceComplete?: () => void;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
   /** Callback on load error */
@@ -57,6 +63,8 @@ function AvatarInner({
   handGesture,
   bodyGesture,
   bodyMotion,
+  motionSequence,
+  onSequenceComplete,
   onLoad,
   amplitude = 0,
   isPlaying = false,
@@ -64,11 +72,13 @@ function AvatarInner({
   const groupRef = useRef<THREE.Group>(null);
   const controllerRef = useRef<AnimationController | null>(null);
   const poseControllerRef = useRef<PoseController | null>(null);
+  const sequencePlayerRef = useRef<MotionSequencePlayer | null>(null);
   const vrmRef = useRef<VRM | null>(null);
   const lastPoseRef = useRef<string | null>(null);
   const lastHandGestureRef = useRef<string | null>(null);
   const lastBodyGestureRef = useRef<string | null>(null);
   const lastBodyMotionRef = useRef<string | null>(null);
+  const lastSequenceRef = useRef<string | null>(null);
 
   // Load GLTF with VRM plugin
   const gltf = useLoader(
@@ -116,11 +126,17 @@ function AvatarInner({
       poseCtrl.init(vrm);
       poseControllerRef.current = poseCtrl;
 
+      // Initialize sequence player with pose controller
+      const seqPlayer = new MotionSequencePlayer();
+      seqPlayer.init(vrm, poseCtrl);
+      sequencePlayerRef.current = seqPlayer;
+
       // Reset pose tracking
       lastPoseRef.current = null;
       lastHandGestureRef.current = null;
       lastBodyGestureRef.current = null;
       lastBodyMotionRef.current = null;
+      lastSequenceRef.current = null;
     }
 
     // Notify parent
@@ -133,6 +149,8 @@ function AvatarInner({
       controllerRef.current = null;
       poseControllerRef.current?.dispose();
       poseControllerRef.current = null;
+      sequencePlayerRef.current?.dispose();
+      sequencePlayerRef.current = null;
     };
   }, [gltf, vrm, mouthConfig, onLoad]);
 
@@ -180,16 +198,63 @@ function AvatarInner({
     }
   }, [bodyMotion]);
 
+  // Play motion sequence when it changes
+  useEffect(() => {
+    const seqPlayer = sequencePlayerRef.current;
+    if (!seqPlayer) return;
+
+    if (motionSequence && motionSequence.id !== lastSequenceRef.current) {
+      lastSequenceRef.current = motionSequence.id;
+      seqPlayer.play(motionSequence, {
+        onComplete: () => {
+          lastSequenceRef.current = null;
+          onSequenceComplete?.();
+        },
+      });
+    } else if (!motionSequence && lastSequenceRef.current) {
+      seqPlayer.stop();
+      lastSequenceRef.current = null;
+    }
+  }, [motionSequence, onSequenceComplete]);
+
   // Animation frame update
-  useFrame((state, delta) => {
-    // Update animation controller (for mouth sync)
+  useFrame((_state, delta) => {
+    const seqPlaying = sequencePlayerRef.current?.getIsPlaying();
+
+    // 1. Animation controller runs layers (mouth sync, idle, etc.)
     if (controllerRef.current) {
+      controllerRef.current.setLayerEnabled('idle-body', !seqPlaying);
       controllerRef.current.update(delta, amplitude, isPlaying);
     }
 
-    // Update pose controller (for body motion and gestures)
+    // 2. Sequence player advances steps (no longer calls poseController directly)
+    if (seqPlaying && sequencePlayerRef.current) {
+      sequencePlayerRef.current.update(delta);
+      
+      // Apply pending pose from sequence player using the SAME path as Pose tab
+      const pendingDuration = sequencePlayerRef.current.getPendingTransitionDuration();
+      if (pendingDuration !== null && poseControllerRef.current) {
+        poseControllerRef.current.setTransitionDuration(pendingDuration);
+      }
+      const pendingPose = sequencePlayerRef.current.getPendingPose();
+      if (pendingPose && poseControllerRef.current) {
+        poseControllerRef.current.applyPose(pendingPose);
+      }
+      const pendingGesture = sequencePlayerRef.current.getPendingHandGesture();
+      if (pendingGesture && poseControllerRef.current) {
+        poseControllerRef.current.applyHandGesture(pendingGesture as any);
+      }
+    }
+
+    // 3. PoseController computes and writes to normalized bones
     if (poseControllerRef.current) {
       poseControllerRef.current.update(delta);
+    }
+
+    // 4. vrm.update() transfers normalized bones to output skeleton
+    //    Must run AFTER PoseController so bone writes are picked up
+    if (vrmRef.current) {
+      vrmRef.current.update(delta);
     }
   });
 
