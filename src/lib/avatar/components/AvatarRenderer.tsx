@@ -15,10 +15,12 @@ import { VRMLoaderPlugin, VRM } from "@pixiv/three-vrm";
 import type { AvatarTransform, AppearanceConfig, MouthAnimationConfig } from "../types";
 import type { PosePreset, HandGesture, BodyGesture, BodyMotion } from "../config/poses";
 import type { MotionSequenceDefinition } from "../animation/MotionSequence";
+import type { ExpressionPreset } from "../config/expressions";
 import { AnimationController, createAnimationController } from "../animation/AnimationController";
 import { PoseController, createPoseController } from "../animation/PoseController";
 import { MotionSequencePlayer } from "../animation/MotionSequence";
 import { VrmaPlayer, createVrmaPlayer } from "../animation/VrmaPlayer";
+import { ExpressionController, createExpressionController } from "../animation/ExpressionController";
 import { detectVrmVersion } from "../loaders";
 
 export interface AvatarRendererProps {
@@ -44,6 +46,8 @@ export interface AvatarRendererProps {
   vrmaUrl?: string | null;
   /** Whether to loop the VRMA animation */
   vrmaLoop?: boolean;
+  /** Facial expression preset */
+  expression?: ExpressionPreset | null;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
   /** Callback on load error */
@@ -69,6 +73,7 @@ function AvatarInner({
   onSequenceComplete,
   vrmaUrl,
   vrmaLoop = true,
+  expression,
   onLoad,
   amplitude = 0,
   isPlaying = false,
@@ -78,6 +83,7 @@ function AvatarInner({
   const poseControllerRef = useRef<PoseController | null>(null);
   const sequencePlayerRef = useRef<MotionSequencePlayer | null>(null);
   const vrmaPlayerRef = useRef<VrmaPlayer | null>(null);
+  const expressionControllerRef = useRef<ExpressionController | null>(null);
   const vrmRef = useRef<VRM | null>(null);
   const lastPoseRef = useRef<string | null>(null);
   const lastHandGestureRef = useRef<string | null>(null);
@@ -85,6 +91,7 @@ function AvatarInner({
   const lastBodyMotionRef = useRef<string | null>(null);
   const lastSequenceRef = useRef<string | null>(null);
   const lastVrmaUrlRef = useRef<string | null>(null);
+  const lastExpressionRef = useRef<string | null>(null);
 
   // Load GLTF with VRM plugin (always register — VRoid GLBs contain VRM extensions)
   const gltf = useLoader(
@@ -141,6 +148,11 @@ function AvatarInner({
       vrmaPlayer.init(vrm);
       vrmaPlayerRef.current = vrmaPlayer;
 
+      // Initialize expression controller
+      const exprController = createExpressionController();
+      exprController.init(vrm);
+      expressionControllerRef.current = exprController;
+
       // Reset pose tracking
       lastPoseRef.current = null;
       lastHandGestureRef.current = null;
@@ -148,6 +160,7 @@ function AvatarInner({
       lastBodyMotionRef.current = null;
       lastSequenceRef.current = null;
       lastVrmaUrlRef.current = null;
+      lastExpressionRef.current = null;
     }
 
     // Notify parent
@@ -248,6 +261,18 @@ function AvatarInner({
     }
   }, [vrmaUrl, vrmaLoop]);
 
+  // Apply expression when expression prop changes
+  useEffect(() => {
+    const exprController = expressionControllerRef.current;
+    if (!exprController) return;
+
+    const exprId = expression?.id ?? null;
+    if (exprId !== lastExpressionRef.current) {
+      lastExpressionRef.current = exprId;
+      exprController.setExpression(expression ?? null);
+    }
+  }, [expression]);
+
   // Animation frame update
   useFrame((_state, delta) => {
     const seqPlaying = sequencePlayerRef.current?.getIsPlaying();
@@ -258,6 +283,11 @@ function AvatarInner({
     if (controllerRef.current) {
       controllerRef.current.setLayerEnabled('idle-body', !seqPlaying && !vrmaPlaying);
       controllerRef.current.update(delta, amplitude, isPlaying);
+    }
+
+    // 1.5. Expression controller updates (smooth transitions between expressions)
+    if (expressionControllerRef.current) {
+      expressionControllerRef.current.update(delta);
     }
 
     // 2. VRMA player update (drives AnimationMixer internally)

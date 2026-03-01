@@ -15,6 +15,7 @@ import { useAudioEnergy } from "../hooks/useAudioAnalyser";
 import type { AvatarTransform, AppearanceConfig, MouthAnimationConfig } from "../types";
 import type { PosePreset, HandGesture, BodyGesture, BodyMotion } from "../config/poses";
 import type { MotionSequenceDefinition } from "../animation/MotionSequence";
+import type { ExpressionPreset } from "../config/expressions";
 
 export interface AvatarSpeechSceneProps {
   /** Model appearance config */
@@ -41,6 +42,8 @@ export interface AvatarSpeechSceneProps {
   vrmaUrl?: string | null;
   /** Whether to loop the VRMA animation */
   vrmaLoop?: boolean;
+  /** Facial expression preset */
+  expression?: ExpressionPreset | null;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
 }
@@ -58,6 +61,7 @@ export function AvatarSpeechScene({
   onSequenceComplete,
   vrmaUrl,
   vrmaLoop,
+  expression,
   onLoad,
 }: AvatarSpeechSceneProps) {
   const { ensureGraph, getEnergy } = useAudioEnergy(audioRef);
@@ -107,6 +111,7 @@ export function AvatarSpeechScene({
       onSequenceComplete={onSequenceComplete}
       vrmaUrl={vrmaUrl}
       vrmaLoop={vrmaLoop}
+      expression={expression}
       onLoad={handleLoad}
       amplitudeRef={amplitudeRef}
       isPlayingRef={isPlayingRef}
@@ -129,6 +134,7 @@ function AvatarRendererWithAmplitude({
   onSequenceComplete,
   vrmaUrl,
   vrmaLoop,
+  expression,
   onLoad,
   amplitudeRef,
   isPlayingRef,
@@ -144,6 +150,7 @@ function AvatarRendererWithAmplitude({
   onSequenceComplete?: () => void;
   vrmaUrl?: string | null;
   vrmaLoop?: boolean;
+  expression?: ExpressionPreset | null;
   onLoad?: (vrm: VRM) => void;
   amplitudeRef: React.RefObject<number>;
   isPlayingRef: React.RefObject<boolean>;
@@ -176,6 +183,7 @@ function AvatarRendererWithAmplitude({
       onSequenceComplete={onSequenceComplete}
       vrmaUrl={vrmaUrl}
       vrmaLoop={vrmaLoop}
+      expression={expression}
       onLoad={onLoad}
       amplitude={state.amplitude}
       isPlaying={state.isPlaying}

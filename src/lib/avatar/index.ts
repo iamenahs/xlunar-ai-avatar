@@ -159,6 +159,30 @@ export type {
   LoadedVrmaAnimation,
 } from "./animation/VrmaPlayer";
 
+// Expression Controller
+export {
+  ExpressionController,
+  createExpressionController,
+} from "./animation/ExpressionController";
+
+// Expression Presets
+export {
+  EXPRESSION_PRESETS,
+  EMOTION_PRESETS,
+  MOUTH_PRESETS,
+  EYE_PRESETS,
+  VISEME_MAPPINGS,
+  getExpressionById,
+  getExpressionsByCategory,
+  getVisemeForPhoneme,
+  blendExpressions,
+} from "./config/expressions";
+
+export type {
+  ExpressionPreset,
+  VisemeMapping,
+} from "./config/expressions";
+
 export type {
   MotionSequenceDefinition,
   MotionStep,

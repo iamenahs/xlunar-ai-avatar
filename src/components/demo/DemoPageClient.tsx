@@ -19,6 +19,10 @@ import {
   BODY_MOTIONS,
   MOTION_SEQUENCES,
   ANIMATION_PRESETS,
+  EMOTION_PRESETS,
+  MOUTH_PRESETS,
+  EYE_PRESETS,
+  EXPRESSION_PRESETS,
   type AvatarSkin,
   type BackgroundPreset,
   type CameraPreset,
@@ -97,7 +101,10 @@ export default function DemoPageClient() {
   const [customVrmaUrl, setCustomVrmaUrl] = useState("");
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "animations" | "environment">("speech");
+  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "animations" | "expressions" | "environment">("speech");
+
+  // Expression state
+  const [activeExpression, setActiveExpression] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -113,6 +120,12 @@ export default function DemoPageClient() {
     smoothing: 0.3,
     maxOpen: 1.0,
   }, [selectedSkin.mouthConfig]);
+
+  // Get selected expression preset from ID
+  const selectedExpression = useMemo(() => {
+    if (!activeExpression) return null;
+    return EXPRESSION_PRESETS.find((e) => e.id === activeExpression) ?? null;
+  }, [activeExpression]);
 
   // Memoize onSequenceComplete to prevent useEffect re-runs
   const handleSequenceComplete = useCallback(() => {
@@ -198,6 +211,7 @@ export default function DemoPageClient() {
               onSequenceComplete={handleSequenceComplete}
               vrmaUrl={activeVrma?.url ?? null}
               vrmaLoop={vrmaLoop}
+              expression={selectedExpression}
             />
           </AvatarStage>
         )}
@@ -246,6 +260,12 @@ export default function DemoPageClient() {
             onClick={() => setActiveTab("animations")}
           >
             🎞️ VRMA
+          </button>
+          <button
+            className={`tab ${activeTab === "expressions" ? "active" : ""}`}
+            onClick={() => setActiveTab("expressions")}
+          >
+            😊 Face
           </button>
           <button 
             className={`tab ${activeTab === "environment" ? "active" : ""}`}
@@ -609,6 +629,91 @@ export default function DemoPageClient() {
 
             <div className="info-box" style={{ marginTop: 8 }}>
               <strong>💡 Tip:</strong> Place .vrma files in <code>/public/animations/</code> and add entries to <code>animations.ts</code> config to make them appear as presets. VRMA animations are automatically retargeted to any VRM model.
+            </div>
+          </section>
+        )}
+
+        {/* Expressions Tab */}
+        {activeTab === "expressions" && (
+          <section className="section">
+            <h3>😊 Facial Expressions</h3>
+            <p className="hint" style={{ marginBottom: 8 }}>
+              Control facial expressions using VRM blend shapes. Expressions are smoothly transitioned.
+            </p>
+
+            <h3>💫 Emotions ({EMOTION_PRESETS.length})</h3>
+            <div className="preset-grid">
+              {EMOTION_PRESETS.map((expr) => (
+                <button
+                  key={expr.id}
+                  className={`preset-btn ${activeExpression === expr.id ? "active" : ""}`}
+                  onClick={() => {
+                    if (activeExpression === expr.id) {
+                      setActiveExpression(null);
+                    } else {
+                      setActiveExpression(expr.id);
+                    }
+                  }}
+                  title={expr.description}
+                >
+                  {expr.name}
+                </button>
+              ))}
+            </div>
+
+            <h3>👄 Mouth Shapes ({MOUTH_PRESETS.length})</h3>
+            <div className="preset-grid">
+              {MOUTH_PRESETS.map((expr) => (
+                <button
+                  key={expr.id}
+                  className={`preset-btn ${activeExpression === expr.id ? "active" : ""}`}
+                  onClick={() => {
+                    if (activeExpression === expr.id) {
+                      setActiveExpression(null);
+                    } else {
+                      setActiveExpression(expr.id);
+                    }
+                  }}
+                  title={expr.description}
+                >
+                  {expr.name}
+                </button>
+              ))}
+            </div>
+
+            <h3>👁️ Eye Control ({EYE_PRESETS.length})</h3>
+            <div className="preset-grid">
+              {EYE_PRESETS.map((expr) => (
+                <button
+                  key={expr.id}
+                  className={`preset-btn ${activeExpression === expr.id ? "active" : ""}`}
+                  onClick={() => {
+                    if (activeExpression === expr.id) {
+                      setActiveExpression(null);
+                    } else {
+                      setActiveExpression(expr.id);
+                    }
+                  }}
+                  title={expr.description}
+                >
+                  {expr.name}
+                </button>
+              ))}
+            </div>
+
+            {activeExpression && (
+              <div className="button-row" style={{ marginTop: 12 }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setActiveExpression(null)}
+                >
+                  ↩ Reset to Neutral
+                </button>
+              </div>
+            )}
+
+            <div className="info-box" style={{ marginTop: 12 }}>
+              <strong>💡 Note:</strong> Expression support varies by model. Standard VRM expressions include happy, sad, angry, surprised, and relaxed. Mouth shapes (aa, ih, ou, ee, oh) are used for lip sync during speech.
             </div>
           </section>
         )}

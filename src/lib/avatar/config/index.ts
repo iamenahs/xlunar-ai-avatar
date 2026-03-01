@@ -64,3 +64,21 @@ export type {
   VrmaAnimationPreset,
 } from './animations';
 
+// Facial expression presets
+export {
+  EXPRESSION_PRESETS,
+  EMOTION_PRESETS,
+  MOUTH_PRESETS,
+  EYE_PRESETS,
+  VISEME_MAPPINGS,
+  getExpressionById,
+  getExpressionsByCategory,
+  getVisemeForPhoneme,
+  blendExpressions,
+} from './expressions';
+
+export type {
+  ExpressionPreset,
+  VisemeMapping,
+} from './expressions';
+
