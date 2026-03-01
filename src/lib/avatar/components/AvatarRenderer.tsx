@@ -18,6 +18,8 @@ import type { MotionSequenceDefinition } from "../animation/MotionSequence";
 import { AnimationController, createAnimationController } from "../animation/AnimationController";
 import { PoseController, createPoseController } from "../animation/PoseController";
 import { MotionSequencePlayer } from "../animation/MotionSequence";
+import { VrmaPlayer, createVrmaPlayer } from "../animation/VrmaPlayer";
+import { detectVrmVersion } from "../loaders";
 
 export interface AvatarRendererProps {
   /** Model appearance config (URL required) */
@@ -38,6 +40,10 @@ export interface AvatarRendererProps {
   motionSequence?: MotionSequenceDefinition | null;
   /** Callback when a motion sequence completes */
   onSequenceComplete?: () => void;
+  /** VRMA animation URL to play (null/undefined = stop) */
+  vrmaUrl?: string | null;
+  /** Whether to loop the VRMA animation */
+  vrmaLoop?: boolean;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
   /** Callback on load error */
@@ -61,6 +67,8 @@ function AvatarInner({
   bodyMotion,
   motionSequence,
   onSequenceComplete,
+  vrmaUrl,
+  vrmaLoop = true,
   onLoad,
   amplitude = 0,
   isPlaying = false,
@@ -69,12 +77,14 @@ function AvatarInner({
   const controllerRef = useRef<AnimationController | null>(null);
   const poseControllerRef = useRef<PoseController | null>(null);
   const sequencePlayerRef = useRef<MotionSequencePlayer | null>(null);
+  const vrmaPlayerRef = useRef<VrmaPlayer | null>(null);
   const vrmRef = useRef<VRM | null>(null);
   const lastPoseRef = useRef<string | null>(null);
   const lastHandGestureRef = useRef<string | null>(null);
   const lastBodyGestureRef = useRef<string | null>(null);
   const lastBodyMotionRef = useRef<string | null>(null);
   const lastSequenceRef = useRef<string | null>(null);
+  const lastVrmaUrlRef = useRef<string | null>(null);
 
   // Load GLTF with VRM plugin (always register — VRoid GLBs contain VRM extensions)
   const gltf = useLoader(
@@ -102,19 +112,10 @@ function AvatarInner({
     const sceneObj = vrm?.scene ?? gltf.scene;
     if (!sceneObj) return;
 
-    // VRM 0.x meshes face -Z in glTF space. Wrap the scene in a pivot that
-    // rotates it 180° around Y so the character faces the camera. This does
-    // NOT affect normalised-bone local axes, so pose data works identically
-    // for VRM 0.x and 1.0 models.
-    const isVrm0 = vrm && ((vrm.meta as any)?.metaVersion === '0' || (vrm.meta as any)?.metaVersion === 0);
-    if (isVrm0) {
-      const pivot = new THREE.Group();
-      pivot.rotation.y = Math.PI;
-      pivot.add(sceneObj);
-      group.add(pivot);
-    } else {
-      group.add(sceneObj);
-    }
+    // Detect VRM version and apply version-specific scene setup
+    const handler = detectVrmVersion(vrm, appearance.modelUrl);
+    const sceneRoot = handler.setupScene(sceneObj);
+    group.add(sceneRoot);
 
     // Store VRM reference
     vrmRef.current = vrm ?? null;
@@ -125,9 +126,9 @@ function AvatarInner({
       controller.init(vrm, mouthConfig);
       controllerRef.current = controller;
 
-      // Initialize pose controller
+      // Initialize pose controller (pass fileUrl for GLB detection)
       const poseCtrl = createPoseController();
-      poseCtrl.init(vrm);
+      poseCtrl.init(vrm, appearance.modelUrl);
       poseControllerRef.current = poseCtrl;
 
       // Initialize sequence player with pose controller
@@ -135,12 +136,18 @@ function AvatarInner({
       seqPlayer.init(vrm, poseCtrl);
       sequencePlayerRef.current = seqPlayer;
 
+      // Initialize VRMA player
+      const vrmaPlayer = createVrmaPlayer();
+      vrmaPlayer.init(vrm);
+      vrmaPlayerRef.current = vrmaPlayer;
+
       // Reset pose tracking
       lastPoseRef.current = null;
       lastHandGestureRef.current = null;
       lastBodyGestureRef.current = null;
       lastBodyMotionRef.current = null;
       lastSequenceRef.current = null;
+      lastVrmaUrlRef.current = null;
     }
 
     // Notify parent
@@ -155,6 +162,8 @@ function AvatarInner({
       poseControllerRef.current = null;
       sequencePlayerRef.current?.dispose();
       sequencePlayerRef.current = null;
+      vrmaPlayerRef.current?.dispose();
+      vrmaPlayerRef.current = null;
     };
   }, [gltf, vrm, mouthConfig, onLoad]);
 
@@ -221,21 +230,46 @@ function AvatarInner({
     }
   }, [motionSequence, onSequenceComplete]);
 
+  // Load and play/stop VRMA animation when URL changes
+  useEffect(() => {
+    const player = vrmaPlayerRef.current;
+    if (!player) return;
+
+    if (vrmaUrl && vrmaUrl !== lastVrmaUrlRef.current) {
+      lastVrmaUrlRef.current = vrmaUrl;
+      player.loadAnimation(vrmaUrl).then(() => {
+        player.play(vrmaUrl, { loop: vrmaLoop });
+      }).catch((err) => {
+        console.error("Failed to load VRMA animation:", err);
+      });
+    } else if (!vrmaUrl && lastVrmaUrlRef.current) {
+      player.stop();
+      lastVrmaUrlRef.current = null;
+    }
+  }, [vrmaUrl, vrmaLoop]);
+
   // Animation frame update
   useFrame((_state, delta) => {
     const seqPlaying = sequencePlayerRef.current?.getIsPlaying();
+    const vrmaPlaying = vrmaPlayerRef.current?.getIsPlaying();
 
     // 1. Animation controller runs layers (mouth sync, idle, etc.)
+    //    Disable idle body when a VRMA or sequence is playing
     if (controllerRef.current) {
-      controllerRef.current.setLayerEnabled('idle-body', !seqPlaying);
+      controllerRef.current.setLayerEnabled('idle-body', !seqPlaying && !vrmaPlaying);
       controllerRef.current.update(delta, amplitude, isPlaying);
     }
 
-    // 2. Sequence player advances steps (no longer calls poseController directly)
-    if (seqPlaying && sequencePlayerRef.current) {
+    // 2. VRMA player update (drives AnimationMixer internally)
+    //    When a VRMA is active, it fully controls bone transforms
+    if (vrmaPlaying && vrmaPlayerRef.current) {
+      vrmaPlayerRef.current.update(delta);
+    }
+
+    // 3. Sequence player advances steps
+    if (!vrmaPlaying && seqPlaying && sequencePlayerRef.current) {
       sequencePlayerRef.current.update(delta);
       
-      // Apply pending pose from sequence player using the SAME path as Pose tab
       const pendingDuration = sequencePlayerRef.current.getPendingTransitionDuration();
       if (pendingDuration !== null && poseControllerRef.current) {
         poseControllerRef.current.setTransitionDuration(pendingDuration);
@@ -250,13 +284,13 @@ function AvatarInner({
       }
     }
 
-    // 3. PoseController computes and writes to normalized bones
-    if (poseControllerRef.current) {
+    // 4. PoseController computes and writes to normalized bones
+    //    Skip when VRMA is driving bones to avoid conflicts
+    if (!vrmaPlaying && poseControllerRef.current) {
       poseControllerRef.current.update(delta);
     }
 
-    // 4. vrm.update() transfers normalized bones to output skeleton
-    //    Must run AFTER PoseController so bone writes are picked up
+    // 5. vrm.update() transfers normalized bones to output skeleton
     if (vrmRef.current) {
       vrmRef.current.update(delta);
     }

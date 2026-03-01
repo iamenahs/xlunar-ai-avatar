@@ -20,9 +20,11 @@ This project provides a **reusable React component** for rendering 3D avatars wi
 - 🔊 TTS integration (OpenAI gpt-4o-mini-tts by default)
 - 👄 Real-time mouth animation from audio amplitude with smooth easing
 - 🤸 8 body poses, 12 hand gestures, 7 animated gestures, 14 body motions (including walking)
+- 🎬 10 choreographed motion sequences across 5 categories
+- 🎞️ VRMA animation support — retargetable animations that work across all VRM models
 - 🎨 7 background presets, 5 camera presets
-- 👥 11 pre-configured avatar models (VRM & GLB)
-- 🔌 Pluggable architecture for extensibility
+- 👥 45 pre-configured avatar models (34 VRoid Hub Collection + VRM samples + VRoid Beta samples)
+- 🔌 Pluggable architecture with version-specific VRM handlers (VRM 0.x, VRM 1.0, VRoid GLB)
 
 ## Quick Start
 
@@ -92,6 +94,17 @@ const speak = async (text: string) => {
 };
 ```
 
+### With VRMA Animation
+
+```tsx
+<AvatarSpeechScene
+  appearance={{ modelUrl: "/models/Hinase.vrm" }}
+  audioRef={audioRef}
+  vrmaUrl="/animations/my-animation.vrma"
+  vrmaLoop={true}
+/>
+```
+
 ---
 
 ## Customization Options
@@ -106,10 +119,7 @@ const speak = async (text: string) => {
 | **Hand Gestures** | 12 | Peace Sign, Thumbs Up, Pointing, OK Sign |
 | **Body Gestures** | 7 | Nod, Wave Hello, Bow, Celebrate (animated) |
 | **Body Motions** | 14 | Natural Idle, Breathing, Sway, Bounce, Walking |
-
-#### Thinking Pose Example
-
-![Thinking Pose](/public/docs/pose-thinking.png)
+| **Motion Sequences** | 10 | Greeting, Thinking, Surprise, Applause, Presentation |
 
 ### Scene & Camera
 
@@ -120,24 +130,76 @@ const speak = async (text: string) => {
 | **Backgrounds** | 7 | Dark Studio, Sunset, Forest, City Night |
 | **Camera Presets** | 5 | Portrait, Headshot, Full Body, Side View |
 
-#### Headshot Camera with Sunset Background
+### VRMA Animations
 
-![Headshot Camera](/public/docs/camera-headshot.png)
+VRM Animation (.vrma) files provide retargetable humanoid animations using the `VRMC_vrm_animation` glTF extension. Animations are automatically retargeted to any VRM model through the humanoid bone system.
+
+- Place `.vrma` files in `public/animations/`
+- Add preset entries in `src/lib/avatar/config/animations.ts`
+- Or load custom animations via URL at runtime
 
 ---
 
 ## Available Avatar Models
 
+### VRoid Hub Collection (34 models)
+
+All models sourced from [VRoid Hub](https://hub.vroid.com/en/users/98739617).
+
+| Model | File |
+|-------|------|
+| Hinase | `Hinase.vrm` |
+| Yukina | `Yukina.vrm` |
+| Rii (Uniform) | `Rii_Uniform.vrm` |
+| Rii | `Rii.vrm` |
+| Uina | `Uina.vrm` |
+| Ruika | `Ruika.vrm` |
+| Yukana | `Yukana.vrm` |
+| Yue | `Yue.vrm` |
+| Moyu | `Moyu.vrm` |
+| Noan | `Noan.vrm` |
+| Yuduki | `Yuduki.vrm` |
+| Hagumi | `Hagumi.vrm` |
+| Rise | `Rise.vrm` |
+| Kirina | `Kirina.vrm` |
+| Konon | `Konon.vrm` |
+| Meimi | `Meimi.vrm` |
+| Rizu | `Rizu.vrm` |
+| Hinari | `Hinari.vrm` |
+| Kanade | `Kanade.vrm` |
+| Saori | `Saori.vrm` |
+| Aisa | `Aisa.vrm` |
+| Yukako | `Yukako.vrm` |
+| Memi | `Memi.vrm` |
+| Nona | `Nona.vrm` |
+| Eru | `Eru.vrm` |
+| Momoa | `Momoa.vrm` |
+| Ayasa | `Ayasa.vrm` |
+| Kanami | `Kanami.vrm` |
+| Yuyu | `Yuyu.vrm` |
+| Miyuka | `Miyuka.vrm` |
+| Rena | `Rena.vrm` |
+| Irori | `Irori.vrm` |
+| Kizuna | `Kizuna.vrm` |
+| Yumeka | `Yumeka.vrm` |
+
+### VRM Sample Models
+
 | Model | Format | License | Source |
 |-------|--------|---------|--------|
-| VRM1 Sample Avatar | VRM | MIT | pixiv/three-vrm |
-| Seed-san | VRM | CC0 | VRM Consortium |
+| VRM1 Sample Avatar | VRM 1.0 | MIT | pixiv/three-vrm |
+| Seed-san | VRM 1.0 | CC0 | VRM Consortium |
 | Avatar Orion | VRM | CC0 | madjin/vrm-samples |
 | Cryptovoxels | VRM | CC0 | madjin/vrm-samples |
-| VRoid Sample A | GLB | CC0 | VRoid Studio |
-| VRoid Sample B | GLB | CC0 | VRoid Studio |
-| VRoid Sample C | GLB | CC0 | VRoid Studio |
-| VRoid Sample D | GLB | CC0 | VRoid Studio |
+
+### VRoid Beta Samples
+
+| Model | Format | Source |
+|-------|--------|--------|
+| VRoid Sample A | GLB | VRoid Studio |
+| VRoid Sample B | GLB | VRoid Studio |
+| VRoid Sample C | GLB | VRoid Studio |
+| VRoid Sample D | GLB | VRoid Studio |
 
 Plus 3 customizable options (Local VRM, Local GLB, Custom URL).
 
@@ -162,6 +224,9 @@ Plus 3 customizable options (Local VRM, Local GLB, Custom URL).
 | `handGesture` | `HandGesture` | `null` | Hand gesture preset |
 | `bodyGesture` | `BodyGesture` | `null` | Animated body gesture |
 | `bodyMotion` | `BodyMotion` | `Natural Idle` | Continuous body motion |
+| `motionSequence` | `MotionSequenceDefinition` | `null` | Choreographed sequence |
+| `vrmaUrl` | `string \| null` | `null` | VRMA animation URL |
+| `vrmaLoop` | `boolean` | `true` | Loop VRMA animation |
 
 ### `<AvatarStage>` Props
 
@@ -215,6 +280,47 @@ import {
 | `walk` | Walking in place animation | Active character |
 | `custom` | Combined breathing + sway + micro-movements | Natural idle (default) |
 
+### VRMA Animation System
+
+The VrmaPlayer class provides full VRMA animation support:
+
+```tsx
+import { VrmaPlayer, createVrmaPlayer } from "@/lib/avatar";
+
+const player = createVrmaPlayer();
+player.init(vrm);
+await player.loadAnimation("/animations/greeting.vrma");
+player.play({ loop: true, speed: 1.0 });
+
+// In animation loop:
+player.update(delta);
+```
+
+Features:
+- Automatic retargeting to any VRM model
+- Looping and one-shot playback
+- Crossfade between animations
+- Expression (blend shape) animation support
+- Gaze/LookAt animation support
+
+---
+
+## VRM Version Handling
+
+The system automatically detects and handles different VRM formats through a pluggable handler architecture:
+
+| Handler | VRM Version | Scene Setup | Rotation |
+|---------|-------------|-------------|----------|
+| `Vrm1Handler` | VRM 1.0 | Identity (no transform) | Identity |
+| `Vrm0Handler` | VRM 0.x | 180° Y-axis pivot | Negate X/Z |
+| `VroidGlbHandler` | VRoid GLB | Same as VRM 0.x | Same as VRM 0.x |
+
+Custom handlers can be added by implementing the `VrmVersionHandler` interface:
+
+```tsx
+import { VrmVersionHandler } from "@/lib/avatar";
+```
+
 ---
 
 ## Architecture
@@ -232,10 +338,21 @@ src/
     │   │   ├── easing.ts      # 20+ easing functions + spring physics
     │   │   ├── AnimationController.ts
     │   │   ├── AnimationLayer.ts
-    │   │   └── PoseController.ts
+    │   │   ├── PoseController.ts
+    │   │   ├── MotionSequence.ts
+    │   │   └── VrmaPlayer.ts  # VRMA animation loading & playback
     │   ├── components/        # React components
-    │   ├── config/            # Skins, backgrounds, camera, poses
+    │   ├── config/
+    │   │   ├── skins.ts       # 45 model presets with group support
+    │   │   ├── poses.ts       # Poses, gestures, motions
+    │   │   ├── sequences.ts   # Motion sequence definitions
+    │   │   └── animations.ts  # VRMA animation presets
     │   ├── hooks/             # Custom hooks
+    │   ├── loaders/           # VRM version handlers
+    │   │   ├── VrmVersionHandler.ts  # Handler interface
+    │   │   ├── Vrm0Handler.ts        # VRM 0.x support
+    │   │   ├── Vrm1Handler.ts        # VRM 1.0 support
+    │   │   └── VroidGlbHandler.ts    # VRoid GLB support
     │   └── types/             # TypeScript types
     └── tts/
         ├── providers/         # TTS provider implementations
@@ -266,16 +383,16 @@ src/
 
 | Category | Count |
 |----------|-------|
-| Skins/Models | 11 |
+| Skins/Models | 45 |
 | Body Poses | 8 |
 | Hand Gestures | 12 |
 | Body Gestures | 7 |
 | Body Motions | 14 |
+| Motion Sequences | 10 |
+| VRMA Animations | Extensible |
 | Backgrounds | 7 |
 | Camera Presets | 5 |
 | TTS Voices | 10 |
-
-**Total Unique Combinations:** 11 × 8 × 12 × 7 × 14 × 7 × 5 × 10 = **25,353,600+**
 
 ---
 
@@ -287,6 +404,9 @@ The architecture supports:
 - **Gesture layer:** ✅ Implemented (wave, nod, bow, etc.)
 - **Smooth transitions:** ✅ Implemented (easing + spring physics)
 - **Walking animations:** ✅ Implemented (multiple walking styles)
+- **Motion sequences:** ✅ Implemented (choreographed multi-step animations)
+- **VRMA animation:** ✅ Implemented (retargetable VRM animations)
+- **VRM version handlers:** ✅ Implemented (VRM 0.x, 1.0, VRoid GLB)
 - **Viseme lip-sync:** Phoneme-based animation (future)
 - **Skin variants:** Material and texture variations (future)
 - **Avatar switching:** Hot-swap models with transitions (future)
@@ -306,3 +426,4 @@ See [LICENSE](./LICENSE) file for details.
 - Avatar Orion: madjin/vrm-samples (CC0)
 - Cryptovoxels: madjin/vrm-samples (CC0)
 - VRoid Samples A-D: VRoid Studio by pixiv (CC0)
+- VRoid Hub Collection (34 models): キャラクター紹介サイト管理人 via [VRoid Hub](https://hub.vroid.com/en/users/98739617)

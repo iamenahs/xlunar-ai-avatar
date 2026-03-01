@@ -100,6 +100,7 @@ export {
   BACKGROUND_PRESETS,
   CAMERA_PRESETS,
   getSkinById,
+  getSkinsGrouped,
   getBackgroundById,
   getCameraById,
   createCustomSkin,
@@ -119,6 +120,10 @@ export {
   MOTION_SEQUENCES,
   getSequenceById,
   getSequencesByCategory,
+  // VRMA animation presets
+  ANIMATION_PRESETS,
+  getAnimationById,
+  getAnimationsByCategory,
 } from "./config";
 
 export type {
@@ -129,6 +134,7 @@ export type {
   HandGesture,
   BodyGesture,
   BodyMotion,
+  VrmaAnimationPreset,
 } from "./config";
 
 // Pose Controller
@@ -141,6 +147,17 @@ export {
 export {
   MotionSequencePlayer,
 } from "./animation/MotionSequence";
+
+// VRMA Animation Player
+export {
+  VrmaPlayer,
+  createVrmaPlayer,
+} from "./animation/VrmaPlayer";
+
+export type {
+  VrmaPlaybackOptions,
+  LoadedVrmaAnimation,
+} from "./animation/VrmaPlayer";
 
 export type {
   MotionSequenceDefinition,
@@ -195,4 +212,17 @@ export type {
   SmoothDampState,
   PoseTransition,
 } from "./animation/easing";
+
+// VRM Version Handlers
+export {
+  detectVrmVersion,
+  Vrm0Handler,
+  Vrm1Handler,
+  VroidGlbHandler,
+} from "./loaders";
+
+export type {
+  VrmVersionHandler,
+  VrmVersion,
+} from "./loaders";
 

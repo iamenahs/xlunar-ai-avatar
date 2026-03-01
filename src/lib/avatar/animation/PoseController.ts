@@ -28,6 +28,7 @@ import {
   type SmoothDampState,
   type EasingFunction,
 } from "./easing";
+import { detectVrmVersion, type VrmVersionHandler } from "../loaders";
 
 // VRM Bone name mapping
 const BONE_MAP: Record<string, VRMHumanBoneName> = {
@@ -97,7 +98,7 @@ const DEFAULT_RELAXED_POSE: Record<string, [number, number, number]> = {
 
 export class PoseController {
   private vrm: VRM | null = null;
-  private isVrm0 = false;
+  private versionHandler: VrmVersionHandler | null = null;
   
   // Base pose (the static pose before motion offsets)
   private basePose: Record<string, [number, number, number]> = { ...DEFAULT_RELAXED_POSE };
@@ -133,9 +134,11 @@ export class PoseController {
   private defaultSmoothTime = 0.15;
 
   /**
-   * Initialize with a VRM model
+   * Initialize with a VRM model.
+   * @param vrm      – the loaded VRM object
+   * @param fileUrl  – original model URL (used for GLB detection)
    */
-  init(vrm: VRM): void {
+  init(vrm: VRM, fileUrl?: string): void {
     this.vrm = vrm;
     this.motionTime = 0;
     this.elapsedTime = 0;
@@ -149,10 +152,8 @@ export class PoseController {
       vrm.humanoid.resetNormalizedPose();
     }
     
-    // VRM 0.x normalized skeleton has an internal 180° Y rotation on hips,
-    // which inverts the X and Z axes for descendant bones.
-    const metaVersion = (vrm.meta as any)?.metaVersion;
-    this.isVrm0 = metaVersion === '0' || metaVersion === 0;
+    // Detect VRM version and store the handler for rotation conversion
+    this.versionHandler = detectVrmVersion(vrm, fileUrl ?? "");
 
     // Initialize bone states from current VRM pose
     this.initializeBoneStates();
@@ -216,11 +217,11 @@ export class PoseController {
 
   /**
    * Convert rotation from authoring convention to device convention.
-   * VRM 0.x normalized bones have X and Z inverted due to internal 180° Y hip rotation.
+   * Delegates to the detected VRM version handler.
    */
   private convertRotation(degrees: [number, number, number]): [number, number, number] {
-    if (!this.isVrm0) return degrees;
-    return [-degrees[0], degrees[1], -degrees[2]];
+    if (!this.versionHandler) return degrees;
+    return this.versionHandler.convertRotation(degrees);
   }
 
   /**
@@ -932,7 +933,7 @@ export class PoseController {
    */
   dispose(): void {
     this.vrm = null;
-    this.isVrm0 = false;
+    this.versionHandler = null;
     this.basePose = { ...DEFAULT_RELAXED_POSE };
     this.currentMotion = null;
     this.gestureAnimation = null;

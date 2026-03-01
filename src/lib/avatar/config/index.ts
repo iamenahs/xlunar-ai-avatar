@@ -8,6 +8,7 @@ export {
   BACKGROUND_PRESETS,
   CAMERA_PRESETS,
   getSkinById,
+  getSkinsGrouped,
   getBackgroundById,
   getCameraById,
   createCustomSkin,
@@ -51,4 +52,15 @@ export {
   getSequenceById,
   getSequencesByCategory,
 } from './sequences';
+
+// VRMA animation presets
+export {
+  ANIMATION_PRESETS,
+  getAnimationById,
+  getAnimationsByCategory,
+} from './animations';
+
+export type {
+  VrmaAnimationPreset,
+} from './animations';
 

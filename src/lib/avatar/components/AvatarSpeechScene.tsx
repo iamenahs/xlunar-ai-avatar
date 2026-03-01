@@ -37,6 +37,10 @@ export interface AvatarSpeechSceneProps {
   motionSequence?: MotionSequenceDefinition | null;
   /** Callback when a motion sequence completes */
   onSequenceComplete?: () => void;
+  /** VRMA animation URL to play */
+  vrmaUrl?: string | null;
+  /** Whether to loop the VRMA animation */
+  vrmaLoop?: boolean;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
 }
@@ -52,6 +56,8 @@ export function AvatarSpeechScene({
   bodyMotion,
   motionSequence,
   onSequenceComplete,
+  vrmaUrl,
+  vrmaLoop,
   onLoad,
 }: AvatarSpeechSceneProps) {
   const { ensureGraph, getEnergy } = useAudioEnergy(audioRef);
@@ -99,6 +105,8 @@ export function AvatarSpeechScene({
       bodyMotion={bodyMotion}
       motionSequence={motionSequence}
       onSequenceComplete={onSequenceComplete}
+      vrmaUrl={vrmaUrl}
+      vrmaLoop={vrmaLoop}
       onLoad={handleLoad}
       amplitudeRef={amplitudeRef}
       isPlayingRef={isPlayingRef}
@@ -119,6 +127,8 @@ function AvatarRendererWithAmplitude({
   bodyMotion,
   motionSequence,
   onSequenceComplete,
+  vrmaUrl,
+  vrmaLoop,
   onLoad,
   amplitudeRef,
   isPlayingRef,
@@ -132,6 +142,8 @@ function AvatarRendererWithAmplitude({
   bodyMotion?: BodyMotion | null;
   motionSequence?: MotionSequenceDefinition | null;
   onSequenceComplete?: () => void;
+  vrmaUrl?: string | null;
+  vrmaLoop?: boolean;
   onLoad?: (vrm: VRM) => void;
   amplitudeRef: React.RefObject<number>;
   isPlayingRef: React.RefObject<boolean>;
@@ -162,6 +174,8 @@ function AvatarRendererWithAmplitude({
       bodyMotion={bodyMotion}
       motionSequence={motionSequence}
       onSequenceComplete={onSequenceComplete}
+      vrmaUrl={vrmaUrl}
+      vrmaLoop={vrmaLoop}
       onLoad={onLoad}
       amplitude={state.amplitude}
       isPlaying={state.isPlaying}

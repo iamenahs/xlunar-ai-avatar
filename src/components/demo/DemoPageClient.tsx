@@ -10,6 +10,7 @@ import {
   AvatarStage,
   AvatarSpeechScene,
   PRESET_SKINS,
+  getSkinsGrouped,
   BACKGROUND_PRESETS,
   CAMERA_PRESETS,
   POSE_PRESETS,
@@ -17,6 +18,7 @@ import {
   BODY_GESTURES,
   BODY_MOTIONS,
   MOTION_SEQUENCES,
+  ANIMATION_PRESETS,
   type AvatarSkin,
   type BackgroundPreset,
   type CameraPreset,
@@ -25,6 +27,7 @@ import {
   type BodyGesture,
   type BodyMotion,
   type MotionSequenceDefinition,
+  type VrmaAnimationPreset,
 } from "@/lib/avatar";
 import { synthesizeToObjectUrl } from "@/lib/tts/client";
 
@@ -88,8 +91,13 @@ export default function DemoPageClient() {
   const [activeSequence, setActiveSequence] = useState<MotionSequenceDefinition | null>(null);
   const [sequencePlaying, setSequencePlaying] = useState(false);
 
+  // VRMA Animation state
+  const [activeVrma, setActiveVrma] = useState<VrmaAnimationPreset | null>(null);
+  const [vrmaLoop, setVrmaLoop] = useState(true);
+  const [customVrmaUrl, setCustomVrmaUrl] = useState("");
+
   // Active tab
-  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "environment">("speech");
+  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "animations" | "environment">("speech");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -188,6 +196,8 @@ export default function DemoPageClient() {
               bodyMotion={selectedBodyMotion}
               motionSequence={activeSequence}
               onSequenceComplete={handleSequenceComplete}
+              vrmaUrl={activeVrma?.url ?? null}
+              vrmaLoop={vrmaLoop}
             />
           </AvatarStage>
         )}
@@ -230,6 +240,12 @@ export default function DemoPageClient() {
             onClick={() => setActiveTab("sequences")}
           >
             🎬 Combos
+          </button>
+          <button
+            className={`tab ${activeTab === "animations" ? "active" : ""}`}
+            onClick={() => setActiveTab("animations")}
+          >
+            🎞️ VRMA
           </button>
           <button 
             className={`tab ${activeTab === "environment" ? "active" : ""}`}
@@ -328,8 +344,12 @@ export default function DemoPageClient() {
                   if (skin) setSelectedSkin(skin);
                 }}
               >
-                {PRESET_SKINS.map((skin) => (
-                  <option key={skin.id} value={skin.id}>{skin.name}</option>
+                {Array.from(getSkinsGrouped().entries()).map(([group, skins]) => (
+                  <optgroup key={group} label={group}>
+                    {skins.map((skin) => (
+                      <option key={skin.id} value={skin.id}>{skin.name}</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               {selectedSkin.description && <p className="hint">{selectedSkin.description}</p>}
@@ -491,6 +511,96 @@ export default function DemoPageClient() {
 
             <div className="info-box">
               <strong>How it works:</strong> Click a sequence to play it. The avatar will perform the full choreographed motion and return to its idle pose. Click again to stop early.
+            </div>
+          </section>
+        )}
+
+        {/* Animations Tab (VRMA) */}
+        {activeTab === "animations" && (
+          <section className="section">
+            <h3>🎞️ VRMA Animations</h3>
+            <p className="hint" style={{ marginBottom: 8 }}>
+              VRM Animation files (.vrma) provide retargetable humanoid animations that work across all VRM models.
+            </p>
+
+            {ANIMATION_PRESETS.length > 0 && (
+              <>
+                <h3>📁 Preset Animations ({ANIMATION_PRESETS.length})</h3>
+                <div className="preset-grid">
+                  {ANIMATION_PRESETS.map((anim) => (
+                    <button
+                      key={anim.id}
+                      className={`preset-btn ${activeVrma?.id === anim.id ? "active" : ""}`}
+                      onClick={() => {
+                        if (activeVrma?.id === anim.id) {
+                          setActiveVrma(null);
+                        } else {
+                          setActiveVrma(anim);
+                          setVrmaLoop(anim.loop ?? true);
+                        }
+                      }}
+                      title={anim.description}
+                    >
+                      {anim.name}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            <h3>🔗 Load Custom VRMA</h3>
+            <div className="form-group">
+              <label>VRMA File URL</label>
+              <input
+                type="url"
+                value={customVrmaUrl}
+                onChange={(e) => setCustomVrmaUrl(e.target.value)}
+                placeholder="/animations/my-anim.vrma or https://..."
+              />
+            </div>
+            <div className="options-row">
+              <div className="form-group">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={vrmaLoop}
+                    onChange={(e) => setVrmaLoop(e.target.checked)}
+                    style={{ marginRight: 6 }}
+                  />
+                  Loop
+                </label>
+              </div>
+              <button
+                className="btn-primary"
+                style={{ flex: "none", padding: "8px 16px" }}
+                disabled={!customVrmaUrl.trim()}
+                onClick={() => {
+                  setActiveVrma({
+                    id: "custom-vrma",
+                    name: "Custom",
+                    url: customVrmaUrl.trim(),
+                    category: "custom",
+                    loop: vrmaLoop,
+                  });
+                }}
+              >
+                ▶ Play
+              </button>
+            </div>
+
+            {activeVrma && (
+              <div className="button-row" style={{ marginTop: 8 }}>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setActiveVrma(null)}
+                >
+                  ⏹ Stop Animation
+                </button>
+              </div>
+            )}
+
+            <div className="info-box" style={{ marginTop: 8 }}>
+              <strong>💡 Tip:</strong> Place .vrma files in <code>/public/animations/</code> and add entries to <code>animations.ts</code> config to make them appear as presets. VRMA animations are automatically retargeted to any VRM model.
             </div>
           </section>
         )}
