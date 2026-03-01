@@ -89,10 +89,10 @@ export const POSE_PRESETS: PosePreset[] = [
     description: "Arms crossed in front of chest",
     bones: {
       spine: [0, 0, 0],
-      leftUpperArm: [-20, 40, -50],
-      rightUpperArm: [-20, -40, 50],
-      leftLowerArm: [0, 30, -85],
-      rightLowerArm: [0, -30, 85],
+      leftUpperArm: [-15, 45, -50],
+      rightUpperArm: [-15, -45, 50],
+      leftLowerArm: [0, 0, -100],
+      rightLowerArm: [0, 0, 100],
     },
   },
   {

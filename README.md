@@ -134,6 +134,35 @@ const speak = async (text: string) => {
 
 VRM Animation (.vrma) files provide retargetable humanoid animations using the `VRMC_vrm_animation` glTF extension. Animations are automatically retargeted to any VRM model through the humanoid bone system.
 
+**Bundled Presets (14):**
+
+*VRoid Project Motion Pack (pixiv Inc.) — [BOOTH](https://booth.pm/ja/items/5512385)*
+| Animation | Category | Description |
+|-----------|----------|-------------|
+| Show Full Body | pose | Full body presentation |
+| Greeting | greeting | Greeting bow |
+| Peace Sign | pose | V-sign pose |
+| Shoot | action | Shooting gesture |
+| Spin | action | Spinning around |
+| Model Pose | pose | Fashion model pose |
+| Squat | action | Squat exercise |
+
+*vrm-viewer (MIT License) — [GitHub](https://github.com/tk256ailab/vrm-viewer)*
+| Animation | Category | Description |
+|-----------|----------|-------------|
+| Goodbye Wave | greeting | Waving goodbye |
+| Angry | emotion | Angry expression |
+| Clapping | action | Applause |
+| Jump | action | Jumping |
+| Look Around | action | Looking around |
+
+*Other Sources:*
+| Animation | Category | Source |
+|-----------|----------|--------|
+| Mocopi Idle | idle | vrma-loader-sample (MIT) |
+| Test Animation | action | pixiv/three-vrm (MIT) |
+
+**Custom Animations:**
 - Place `.vrma` files in `public/animations/`
 - Add preset entries in `src/lib/avatar/config/animations.ts`
 - Or load custom animations via URL at runtime
@@ -389,7 +418,7 @@ src/
 | Body Gestures | 7 |
 | Body Motions | 14 |
 | Motion Sequences | 10 |
-| VRMA Animations | Extensible |
+| VRMA Animations | 14 bundled (+custom) |
 | Backgrounds | 7 |
 | Camera Presets | 5 |
 | TTS Voices | 10 |
@@ -427,3 +456,11 @@ See [LICENSE](./LICENSE) file for details.
 - Cryptovoxels: madjin/vrm-samples (CC0)
 - VRoid Samples A-D: VRoid Studio by pixiv (CC0)
 - VRoid Hub Collection (34 models): キャラクター紹介サイト管理人 via [VRoid Hub](https://hub.vroid.com/en/users/98739617)
+
+### Third-Party Animation Credits
+
+- **VRoid Project Motion Pack (7 animations):** pixiv Inc.'s VRoid Project - [BOOTH](https://booth.pm/ja/items/5512385)
+  - Credit: "Character animation credits to pixiv Inc.'s VRoid Project"
+- vrm-viewer animations (5): tk256ailab/vrm-viewer (MIT)
+- sample-mocopi: tfuru/vrma-loader-sample (MIT)
+- test.vrma: pixiv/three-vrm (MIT)

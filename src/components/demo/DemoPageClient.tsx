@@ -523,30 +523,38 @@ export default function DemoPageClient() {
               VRM Animation files (.vrma) provide retargetable humanoid animations that work across all VRM models.
             </p>
 
-            {ANIMATION_PRESETS.length > 0 && (
-              <>
-                <h3>📁 Preset Animations ({ANIMATION_PRESETS.length})</h3>
-                <div className="preset-grid">
-                  {ANIMATION_PRESETS.map((anim) => (
-                    <button
-                      key={anim.id}
-                      className={`preset-btn ${activeVrma?.id === anim.id ? "active" : ""}`}
-                      onClick={() => {
-                        if (activeVrma?.id === anim.id) {
-                          setActiveVrma(null);
-                        } else {
-                          setActiveVrma(anim);
-                          setVrmaLoop(anim.loop ?? true);
-                        }
-                      }}
-                      title={anim.description}
-                    >
-                      {anim.name}
-                    </button>
-                  ))}
+            {(["vroid", "greeting", "action", "emotion", "idle"] as const).map((cat) => {
+              const anims = ANIMATION_PRESETS.filter((a) => a.category === cat);
+              if (anims.length === 0) return null;
+              const icon = cat === "vroid" ? "✨" : cat === "greeting" ? "👋" : cat === "emotion" ? "😊" : cat === "action" ? "🎬" : "🧘";
+              const label = cat === "vroid" ? "VRoid Project" : cat;
+              return (
+                <div key={cat}>
+                  <h3 style={{ textTransform: "capitalize" }}>
+                    {icon} {label} ({anims.length})
+                  </h3>
+                  <div className="preset-grid">
+                    {anims.map((anim) => (
+                      <button
+                        key={anim.id}
+                        className={`preset-btn ${activeVrma?.id === anim.id ? "active" : ""}`}
+                        onClick={() => {
+                          if (activeVrma?.id === anim.id) {
+                            setActiveVrma(null);
+                          } else {
+                            setActiveVrma(anim);
+                            setVrmaLoop(anim.loop ?? true);
+                          }
+                        }}
+                        title={anim.description}
+                      >
+                        {anim.name}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </>
-            )}
+              );
+            })}
 
             <h3>🔗 Load Custom VRMA</h3>
             <div className="form-group">
@@ -653,12 +661,13 @@ export default function DemoPageClient() {
           width: 100vw;
           background: #0a0a0a;
           font-family: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          overflow: hidden;
         }
 
         .avatar-panel {
           flex: 1;
-          min-width: 400px;
-          border-right: 1px solid #222;
+          height: 100%;
+          min-width: 0;
         }
 
         .no-model {
@@ -670,14 +679,38 @@ export default function DemoPageClient() {
         }
 
         .controls-panel {
-          width: 420px;
+          width: 460px;
+          flex-shrink: 0;
+          margin: 16px;
           padding: 20px;
           overflow-y: auto;
-          background: linear-gradient(180deg, #111 0%, #0a0a0a 100%);
+          background: rgba(17, 17, 17, 0.95);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          border-radius: 16px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
           color: #e0e0e0;
           display: flex;
           flex-direction: column;
           gap: 16px;
+        }
+
+        .controls-panel::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .controls-panel::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .controls-panel::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 3px;
+        }
+
+        .controls-panel::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.3);
         }
 
         .header h1 {
@@ -849,7 +882,7 @@ export default function DemoPageClient() {
 
         .preset-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 6px;
         }
 
@@ -1044,10 +1077,20 @@ export default function DemoPageClient() {
           border-color: #00d4ff;
         }
 
-        @media (max-width: 900px) {
-          .demo-container { flex-direction: column; }
-          .avatar-panel { min-height: 50vh; border-right: none; border-bottom: 1px solid #222; }
-          .controls-panel { width: 100%; }
+        @media (max-width: 1000px) {
+          .demo-container {
+            flex-direction: column;
+          }
+          .avatar-panel {
+            flex: 1;
+            min-height: 50vh;
+          }
+          .controls-panel { 
+            width: auto;
+            max-height: 50vh;
+            margin: 0;
+            border-radius: 16px 16px 0 0;
+          }
         }
       `}</style>
     </div>
