@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2024 VaultX.Technology
+Copyright (c) 2024-2026 VaultX.Technology
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,104 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+---
+
+## Third-Party Credits
+
+This project bundles or uses third-party assets and libraries. Their respective
+licenses and attribution requirements are listed below.
+
+---
+
+### Software Libraries
+
+**@pixiv/three-vrm** — MIT License
+Copyright (c) 2019-2024 pixiv Inc.
+https://github.com/pixiv/three-vrm
+
+**@pixiv/three-vrm-animation** — MIT License
+Copyright (c) 2019-2024 pixiv Inc.
+https://github.com/pixiv/three-vrm
+
+**Three.js** — MIT License
+Copyright (c) 2010-2024 three.js authors
+https://github.com/mrdoob/three.js
+
+**React Three Fiber** — MIT License
+Copyright (c) 2019-2024 Poimandres
+https://github.com/pmndrs/react-three-fiber
+
+**@react-three/drei** — MIT License
+Copyright (c) 2020-2024 Poimandres
+https://github.com/pmndrs/drei
+
+**Next.js** — MIT License
+Copyright (c) 2024 Vercel, Inc.
+https://github.com/vercel/next.js
+
+---
+
+### 3D Avatar Models
+
+**VRM Consortium Sample (Seed-san)** — CC0 1.0 Universal (Public Domain)
+Source: https://github.com/vrm-c/vrm-specification
+
+**pixiv/three-vrm Sample (VRM1_Constraint_Twist_Sample)** — MIT License
+Copyright (c) 2019-2024 pixiv Inc.
+Source: https://github.com/pixiv/three-vrm
+
+**madjin/vrm-samples (Avatar_Orion, cryptovoxels)** — CC0 1.0 Universal (Public Domain)
+Source: https://github.com/madjin/vrm-samples
+
+**VRoid Studio Beta Samples (VRoid_Sample_A/B/C/D)** — CC0 1.0 Universal (Public Domain)
+Copyright (c) pixiv Inc.
+Source: https://vroid.com
+
+**VRoid Hub Character Collection (34 models)** — Free, All Uses Allowed
+Creator: キャラクター紹介サイト管理人
+Source: https://hub.vroid.com/en/users/98739617
+Characters: Hinase, Yukina, Rii (Uniform), Rii, Uina, Ruika, Yukana, Yue, Moyu,
+Noan, Yuduki, Hagumi, Rise, Kirina, Konon, Meimi, Rizu, Hinari, Kanade, Saori,
+Aisa, Yukako, Memi, Nona, Eru, Momoa, Ayasa, Kanami, Yuyu, Miyuka, Rena, Irori,
+Kizuna, Yumeka
+
+---
+
+### VRMA Animations
+
+**VRoid Project Motion Pack** — Free (Credit Required)
+Copyright (c) pixiv Inc.
+Source: https://booth.pm/ja/items/5512385
+Required attribution: "Character animation credits to pixiv Inc.'s VRoid Project"
+Files: ShowFullBody.vrma, Greeting.vrma, PeaceSign.vrma, Shoot.vrma, Spin.vrma,
+ModelPose.vrma, Squat.vrma
+
+**vrm-viewer Animations** — MIT License
+Copyright (c) tk256ailab
+Source: https://github.com/tk256ailab/vrm-viewer
+Files: goodbye_wave.vrma, angry_anim.vrma, clapping.vrma, jump.vrma, look_around.vrma
+
+**vrma-loader-sample** — MIT License
+Copyright (c) tfuru
+Source: https://github.com/tfuru/vrma-loader-sample
+Files: sample-mocopi.vrma
+
+**three-vrm Test Animation** — MIT License
+Copyright (c) 2019-2024 pixiv Inc.
+Source: https://github.com/pixiv/three-vrm
+Files: test.vrma
+
+---
+
+### Fonts & Icons
+
+**Geist Font** — MIT License
+Copyright (c) 2024 Vercel, Inc.
+Source: https://github.com/vercel/geist-font
+
+---
+
+For full license texts of bundled assets, see:
+  public/avatars/LICENSES/LICENSE-CC0.txt
+  public/avatars/LICENSES/LICENSE-three-vrm-MIT.txt
