@@ -1,7 +1,7 @@
 {
   "name": "xlunar-ai-avatar",
-  "version": "0.1.0",
-  "description": "Open-source avatar speech renderer platform with VRM support, TTS integration, and customizable poses/animations",
+  "version": "0.2.0",
+  "description": "Open-source avatar speech renderer platform with VRM support, TTS integration, facial expressions, and customizable poses/animations",
   "author": "VaultX.technology",
   "license": "MIT",
   "homepage": "https://github.com/vaultx-technology/xlunar-ai-avatar",
@@ -12,15 +12,32 @@
   "keywords": [
     "avatar",
     "vrm",
+    "vrma",
+    "vroid",
     "tts",
     "text-to-speech",
     "3d",
     "react",
     "three.js",
     "next.js",
-    "animation"
+    "animation",
+    "facial-expressions",
+    "lip-sync"
   ],
   "private": true,
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/lib/avatar/index.ts",
+    "./avatar": "./src/lib/avatar/index.ts",
+    "./tts": "./src/lib/tts/client.ts"
+  },
+  "typesVersions": {
+    "*": {
+      "*": ["./src/lib/avatar/index.ts"],
+      "avatar": ["./src/lib/avatar/index.ts"],
+      "tts": ["./src/lib/tts/client.ts"]
+    }
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

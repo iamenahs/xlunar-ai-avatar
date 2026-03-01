@@ -71,6 +71,16 @@ VRoid Project Motion Pack + community animations - retargetable to any VRM model
 
 ![Scene Panel](public/docs/scene-panel.png)
 
+### Facial Expressions
+
+25 expression presets: 10 emotions, 6 mouth shapes, 9 eye controls. Real-time blend shape control with smooth transitions.
+
+| Category | Presets |
+|----------|---------|
+| **Emotions** | Neutral, Happy, Very Happy, Sad, Angry, Surprised, Relaxed, Thinking, Shy, Determined |
+| **Mouth** | Closed, Aa, Ih, Ou, Ee, Oh |
+| **Eyes** | Open, Closed, Half, Wink Left, Wink Right, Look Up/Down/Left/Right |
+
 ---
 
 ## Features
@@ -79,12 +89,14 @@ VRoid Project Motion Pack + community animations - retargetable to any VRM model
 |---------|-------------|
 | **45 Avatar Models** | 34 VRoid Hub characters + VRM samples + custom URL support |
 | **14 VRMA Animations** | 7 from VRoid Project + 5 from vrm-viewer + 2 others |
+| **25 Facial Expressions** | 10 emotions + 6 mouth shapes + 9 eye controls |
 | **Full Pose Control** | 8 poses, 12 hand gestures, 7 body gestures, 14 motions |
 | **10 Motion Sequences** | Choreographed multi-step animations |
 | **TTS Integration** | OpenAI gpt-4o-mini-tts with 10 voices |
 | **Lip Sync** | Real-time mouth animation from audio amplitude |
 | **Scene Control** | 7 backgrounds, 5 camera presets |
 | **VRM Universal** | Supports VRM 0.x, 1.0, and VRoid GLB formats |
+| **Library Mode** | Use as embeddable component in your own apps |
 
 ---
 
@@ -108,6 +120,18 @@ Open [http://localhost:3000](http://localhost:3000)
 
 ## Integration
 
+This library can be embedded into your own Next.js/React applications.
+
+### Installation (Copy Method)
+
+```bash
+# Copy the avatar library to your project
+cp -r src/lib/avatar your-project/src/lib/
+
+# Install required dependencies
+npm install @pixiv/three-vrm @pixiv/three-vrm-animation @react-three/fiber @react-three/drei three
+```
+
 ### Basic Usage
 
 ```tsx
@@ -120,7 +144,7 @@ function MyApp() {
     <>
       <AvatarStage>
         <AvatarSpeechScene
-          appearance={{ modelUrl: "/models/Hinase.vrm" }}
+          appearance={{ modelUrl: "/models/avatar.vrm" }}
           audioRef={audioRef}
         />
       </AvatarStage>
@@ -130,14 +154,40 @@ function MyApp() {
 }
 ```
 
+### With Facial Expressions
+
+```tsx
+import { AvatarSpeechScene, EMOTION_PRESETS, getExpressionById } from "@/lib/avatar";
+
+// Apply a preset expression
+<AvatarSpeechScene
+  appearance={{ modelUrl: "/models/avatar.vrm" }}
+  audioRef={audioRef}
+  expression={getExpressionById("happy")}
+/>
+```
+
 ### With VRMA Animation
 
 ```tsx
 <AvatarSpeechScene
-  appearance={{ modelUrl: "/models/Hinase.vrm" }}
+  appearance={{ modelUrl: "/models/avatar.vrm" }}
   audioRef={audioRef}
   vrmaUrl="/animations/Greeting.vrma"
   vrmaLoop={false}
+/>
+```
+
+### With Poses
+
+```tsx
+import { getPoseById, getHandGestureById } from "@/lib/avatar";
+
+<AvatarSpeechScene
+  appearance={{ modelUrl: "/models/avatar.vrm" }}
+  audioRef={audioRef}
+  pose={getPoseById("relaxed")}
+  handGesture={getHandGestureById("peace-sign")}
 />
 ```
 
@@ -153,7 +203,7 @@ const speak = async (text: string) => {
 };
 ```
 
-**Full documentation:** [integration-guide.md](./integration-guide.md)
+**Full documentation:** [INTEGRATION.md](./INTEGRATION.md)
 
 ---
 
@@ -231,6 +281,7 @@ From [BOOTH](https://booth.pm/ja/items/5512385) by pixiv Inc. - **Free, requires
 |----------|-------|
 | Avatar Models | 45 |
 | VRMA Animations | 14 (+custom) |
+| Facial Expressions | 25 (10 emotions + 6 mouth + 9 eyes) |
 | Body Poses | 8 |
 | Hand Gestures | 12 |
 | Body Gestures | 7 |
@@ -246,23 +297,30 @@ From [BOOTH](https://booth.pm/ja/items/5512385) by pixiv Inc. - **Free, requires
 
 ```
 src/lib/avatar/
+├── index.ts                # Main entry point - all exports
 ├── animation/
 │   ├── easing.ts           # 20+ easing functions
 │   ├── VrmaPlayer.ts       # VRMA animation system
 │   ├── PoseController.ts   # Pose/gesture control
-│   └── MotionSequence.ts   # Choreographed sequences
+│   ├── ExpressionController.ts # Facial expression system
+│   ├── MotionSequence.ts   # Choreographed sequences
+│   └── AnimationLayer.ts   # Mouth sync, idle animations
 ├── components/
 │   ├── AvatarStage.tsx     # 3D canvas container
-│   └── AvatarSpeechScene.tsx # Main avatar component
+│   ├── AvatarRenderer.tsx  # Core VRM renderer
+│   └── AvatarSpeechScene.tsx # Speech-enabled avatar
 ├── config/
 │   ├── skins.ts            # 45 model presets
 │   ├── poses.ts            # Poses, gestures, motions
 │   ├── animations.ts       # VRMA animation presets
+│   ├── expressions.ts      # 25 facial expressions
 │   └── sequences.ts        # Motion sequences
-└── loaders/
-    ├── Vrm0Handler.ts      # VRM 0.x support
-    ├── Vrm1Handler.ts      # VRM 1.0 support
-    └── VroidGlbHandler.ts  # VRoid GLB support
+├── loaders/
+│   ├── Vrm0Handler.ts      # VRM 0.x support
+│   ├── Vrm1Handler.ts      # VRM 1.0 support
+│   └── VroidGlbHandler.ts  # VRoid GLB support
+├── hooks/                  # React hooks
+└── types/                  # TypeScript definitions
 ```
 
 ---
