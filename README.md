@@ -13,6 +13,64 @@ An MVP-quality, open-source avatar "speech renderer" platform built with Next.js
 
 ---
 
+## Screenshots
+
+### Main Interface
+
+Clean split-panel design with 3D avatar viewport (left) and floating control panel (right).
+
+![Main Interface](public/docs/main-interface.png)
+
+### Model Selection (45 Models)
+
+Choose from 34 VRoid Hub characters, VRM samples, and custom models.
+
+![Model Panel](public/docs/model-panel.png)
+
+### VRoid Hub Models
+
+| Hinase | Yukina | Rii |
+|--------|--------|-----|
+| ![Hinase](public/docs/model-hinase.png) | ![Yukina](public/docs/model-yukina.png) | ![Rii](public/docs/model-rii.png) |
+
+| Uina | Ruika | Yue |
+|------|-------|-----|
+| ![Uina](public/docs/model-uina.png) | ![Ruika](public/docs/model-ruika.png) | ![Yue](public/docs/model-yue.png) |
+
+### Poses & Gestures
+
+8 body poses, 12 hand gestures, 7 body gestures, 14 body motions.
+
+![Pose Panel](public/docs/pose-panel.png)
+
+### Motion Sequences
+
+10 choreographed sequences across 5 categories: Emotion, Social, Thinking, Reaction, Presentation.
+
+![Combos Panel](public/docs/combos-panel.png)
+
+### VRMA Animations (14 Presets)
+
+VRoid Project Motion Pack + community animations - retargetable to any VRM model.
+
+![VRMA Panel](public/docs/vrma-panel.png)
+
+#### VRMA Animation Examples
+
+| Show Full Body | Greeting |
+|----------------|----------|
+| ![Show Full Body](public/docs/vrma-show-full-body.png) | ![Greeting](public/docs/vrma-greeting.png) |
+
+| Peace Sign | Spin |
+|------------|------|
+| ![Peace Sign](public/docs/vrma-peace-sign.png) | ![Spin](public/docs/vrma-spin.png) |
+
+### Scene Customization
+
+7 backgrounds, 5 camera presets.
+
+![Scene Panel](public/docs/scene-panel.png)
+
 ---
 
 ## Features
@@ -105,7 +163,7 @@ const speak = async (text: string) => {
 
 All models from [VRoid Hub](https://hub.vroid.com/en/users/98739617):
 
-| Row 1 | Row 2 | Row 3 | Row 4 |
+| | | | |
 |-------|-------|-------|-------|
 | Hinase | Yukina | Rii (Uniform) | Rii |
 | Uina | Ruika | Yukana | Yue |

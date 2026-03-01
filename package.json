@@ -47,6 +47,7 @@
     "@types/three": "^0.182.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.10",
+    "puppeteer": "^24.37.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
