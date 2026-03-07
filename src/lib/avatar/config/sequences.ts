@@ -132,7 +132,7 @@ export const MOTION_SEQUENCES: MotionSequenceDefinition[] = [
         bones: {
           head: [-3, 10, 0],
           spine: [-1, 3, 0],
-          rightUpperArm: [0, 0, 65],
+          rightUpperArm: [0, 0, 50],
           rightLowerArm: [0, 0, 15],
         },
         expression: { happy: 0.4, surprised: 0.3 },
@@ -143,8 +143,8 @@ export const MOTION_SEQUENCES: MotionSequenceDefinition[] = [
         easing: "easeOut",
         bones: {
           head: [-2, 8, 0],
-          rightUpperArm: [-20, 0, 30],
-          rightLowerArm: [-10, 0, 25],
+          rightUpperArm: [-15, -15, -20],
+          rightLowerArm: [-15, 0, 100],
           spine: [0, 2, 0],
         },
         handGesture: {
@@ -158,7 +158,7 @@ export const MOTION_SEQUENCES: MotionSequenceDefinition[] = [
         duration: 300,
         easing: "gentle",
         bones: {
-          rightLowerArm: [-10, 22, 25],
+          rightLowerArm: [-15, 25, 100],
         },
       },
       {
@@ -166,7 +166,7 @@ export const MOTION_SEQUENCES: MotionSequenceDefinition[] = [
         duration: 300,
         easing: "gentle",
         bones: {
-          rightLowerArm: [-10, -22, 25],
+          rightLowerArm: [-15, -25, 100],
         },
       },
       {
@@ -174,7 +174,7 @@ export const MOTION_SEQUENCES: MotionSequenceDefinition[] = [
         duration: 300,
         easing: "gentle",
         bones: {
-          rightLowerArm: [-10, 18, 25],
+          rightLowerArm: [-15, 20, 100],
         },
       },
       {

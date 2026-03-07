@@ -5,3 +5,5 @@
 export { useAudioAnalyser, useAudioEnergy } from "./useAudioAnalyser";
 export type { UseAudioAnalyserReturn } from "./useAudioAnalyser";
 
+export { useAvatarController } from "./useAvatarController";
+

@@ -23,6 +23,7 @@ import {
   MOUTH_PRESETS,
   EYE_PRESETS,
   EXPRESSION_PRESETS,
+  useAvatarController,
   type AvatarSkin,
   type BackgroundPreset,
   type CameraPreset,
@@ -34,6 +35,7 @@ import {
   type VrmaAnimationPreset,
 } from "@/lib/avatar";
 import { synthesizeToObjectUrl } from "@/lib/tts/client";
+import ControlTab from "./ControlTab";
 
 // Available OpenAI voices for gpt-4o-mini-tts
 const VOICES = ["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"] as const;
@@ -86,10 +88,8 @@ export default function DemoPageClient() {
   const [selectedPose, setSelectedPose] = useState<PosePreset | null>(null);
   const [selectedHandGesture, setSelectedHandGesture] = useState<HandGesture | null>(null);
   const [selectedBodyGesture, setSelectedBodyGesture] = useState<BodyGesture | null>(null);
-  // Default to "Natural Idle" for smooth breathing and sway
-  const [selectedBodyMotion, setSelectedBodyMotion] = useState<BodyMotion>(
-    BODY_MOTIONS.find(m => m.id === "idleNatural") || BODY_MOTIONS[BODY_MOTIONS.length - 1]
-  );
+  const defaultMotion = BODY_MOTIONS.find(m => m.id === "idleNatural") || BODY_MOTIONS[BODY_MOTIONS.length - 1];
+  const [selectedBodyMotion, setSelectedBodyMotion] = useState<BodyMotion>(defaultMotion);
 
   // Motion Sequence state
   const [activeSequence, setActiveSequence] = useState<MotionSequenceDefinition | null>(null);
@@ -101,7 +101,10 @@ export default function DemoPageClient() {
   const [customVrmaUrl, setCustomVrmaUrl] = useState("");
 
   // Active tab
-  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "animations" | "expressions" | "environment">("speech");
+  const [activeTab, setActiveTab] = useState<"speech" | "model" | "pose" | "sequences" | "animations" | "expressions" | "environment" | "control">("speech");
+
+  // Programmable controller
+  const avatarController = useAvatarController({ enablePostMessage: true });
 
   // Expression state
   const [activeExpression, setActiveExpression] = useState<string | null>(null);
@@ -172,6 +175,28 @@ export default function DemoPageClient() {
     setIsSpeaking(false);
   }, []);
 
+  const handleReset = useCallback(() => {
+    setSelectedPose(null);
+    setSelectedHandGesture(null);
+    setSelectedBodyGesture(null);
+    setSelectedBodyMotion(defaultMotion);
+    setActiveSequence(null);
+    setSequencePlaying(false);
+    setActiveVrma(null);
+    setActiveExpression(null);
+  }, [defaultMotion]);
+
+  // Reset pose/gesture state when model changes
+  useEffect(() => {
+    setSelectedPose(null);
+    setSelectedHandGesture(null);
+    setSelectedBodyGesture(null);
+    setActiveSequence(null);
+    setSequencePlaying(false);
+    setActiveVrma(null);
+    setActiveExpression(null);
+  }, [selectedSkin]);
+
   return (
     <div className="demo-container">
       {/* Avatar Panel */}
@@ -212,6 +237,7 @@ export default function DemoPageClient() {
               vrmaUrl={activeVrma?.url ?? null}
               vrmaLoop={vrmaLoop}
               expression={selectedExpression}
+              controller={avatarController}
             />
           </AvatarStage>
         )}
@@ -231,6 +257,13 @@ export default function DemoPageClient() {
 
         {/* Tabs */}
         <div className="tabs">
+          <button
+            className="tab reset-tab"
+            onClick={handleReset}
+            title="Reset all poses, gestures, expressions, and animations to default"
+          >
+            ↺
+          </button>
           <button 
             className={`tab ${activeTab === "speech" ? "active" : ""}`}
             onClick={() => setActiveTab("speech")}
@@ -272,6 +305,12 @@ export default function DemoPageClient() {
             onClick={() => setActiveTab("environment")}
           >
             🌍 Scene
+          </button>
+          <button
+            className={`tab ${activeTab === "control" ? "active" : ""}`}
+            onClick={() => setActiveTab("control")}
+          >
+            &lt;/&gt; Control
           </button>
         </div>
 
@@ -750,6 +789,11 @@ export default function DemoPageClient() {
           </section>
         )}
 
+        {/* Control Tab (Programmable API) */}
+        {activeTab === "control" && (
+          <ControlTab controller={avatarController} />
+        )}
+
         <footer className="footer">
           <p className="hint">
             📊 Customizations: {PRESET_SKINS.length} skins • {POSE_PRESETS.length} poses • {HAND_GESTURES.length} hand gestures • {BODY_GESTURES.length} body gestures • {BODY_MOTIONS.length} motions • {MOTION_SEQUENCES.length} sequences • {BACKGROUND_PRESETS.length} backgrounds • {CAMERA_PRESETS.length} cameras
@@ -784,8 +828,11 @@ export default function DemoPageClient() {
         }
 
         .controls-panel {
-          width: 460px;
+          width: 520px;
+          min-width: 420px;
+          max-width: 600px;
           flex-shrink: 0;
+          resize: horizontal;
           margin: 16px;
           padding: 20px;
           overflow-y: auto;
@@ -836,6 +883,7 @@ export default function DemoPageClient() {
 
         .tabs {
           display: flex;
+          flex-wrap: wrap;
           gap: 4px;
           background: #1a1a1a;
           padding: 4px;
@@ -843,8 +891,9 @@ export default function DemoPageClient() {
         }
 
         .tab {
-          flex: 1;
-          padding: 8px 12px;
+          flex: 1 1 auto;
+          min-width: 0;
+          padding: 8px 10px;
           font-size: 12px;
           font-weight: 500;
           background: transparent;
@@ -853,6 +902,19 @@ export default function DemoPageClient() {
           color: #888;
           cursor: pointer;
           transition: all 0.2s;
+          white-space: nowrap;
+        }
+
+        .reset-tab {
+          flex: 0 0 auto;
+          padding: 8px 10px;
+          font-size: 14px;
+          color: #666;
+        }
+
+        .reset-tab:hover {
+          background: #333;
+          color: #ff6b6b;
         }
 
         .tab:hover {

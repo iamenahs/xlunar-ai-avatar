@@ -16,6 +16,7 @@ import type { AvatarTransform, AppearanceConfig, MouthAnimationConfig } from "..
 import type { PosePreset, HandGesture, BodyGesture, BodyMotion } from "../config/poses";
 import type { MotionSequenceDefinition } from "../animation/MotionSequence";
 import type { ExpressionPreset } from "../config/expressions";
+import type { AvatarController } from "../controller/AvatarController";
 
 export interface AvatarSpeechSceneProps {
   /** Model appearance config */
@@ -46,6 +47,8 @@ export interface AvatarSpeechSceneProps {
   expression?: ExpressionPreset | null;
   /** Callback when VRM is loaded */
   onLoad?: (vrm: VRM) => void;
+  /** Optional AvatarController for programmatic control */
+  controller?: AvatarController;
 }
 
 export function AvatarSpeechScene({
@@ -63,6 +66,7 @@ export function AvatarSpeechScene({
   vrmaLoop,
   expression,
   onLoad,
+  controller,
 }: AvatarSpeechSceneProps) {
   const { ensureGraph, getEnergy } = useAudioEnergy(audioRef);
   const amplitudeRef = useRef(0);
@@ -115,6 +119,7 @@ export function AvatarSpeechScene({
       onLoad={handleLoad}
       amplitudeRef={amplitudeRef}
       isPlayingRef={isPlayingRef}
+      controller={controller}
     />
   );
 }
@@ -138,6 +143,7 @@ function AvatarRendererWithAmplitude({
   onLoad,
   amplitudeRef,
   isPlayingRef,
+  controller,
 }: {
   appearance: AppearanceConfig;
   transform?: AvatarTransform;
@@ -154,6 +160,7 @@ function AvatarRendererWithAmplitude({
   onLoad?: (vrm: VRM) => void;
   amplitudeRef: React.RefObject<number>;
   isPlayingRef: React.RefObject<boolean>;
+  controller?: AvatarController;
 }) {
   const [state, setState] = React.useState({ amplitude: 0, isPlaying: false });
 
@@ -187,6 +194,7 @@ function AvatarRendererWithAmplitude({
       onLoad={onLoad}
       amplitude={state.amplitude}
       isPlaying={state.isPlaying}
+      controller={controller}
     />
   );
 }

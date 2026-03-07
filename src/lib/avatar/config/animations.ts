@@ -29,7 +29,7 @@ export interface VrmaAnimationPreset {
   /** Optional description */
   description?: string;
   /** Category for UI grouping */
-  category: "vroid" | "idle" | "greeting" | "emotion" | "action" | "pose" | "custom";
+  category: "vroid" | "idle" | "greeting" | "emotion" | "action" | "pose" | "dance" | "custom";
   /** Whether to loop by default */
   loop?: boolean;
 }
@@ -142,13 +142,66 @@ export const ANIMATION_PRESETS: VrmaAnimationPreset[] = [
   },
 
   // ============================================
+  // vrm-viewer: additional emotion/state animations (MIT License)
+  // https://github.com/tk256ailab/vrm-viewer
+  // ============================================
+  {
+    id: "vrma-blush",
+    name: "Blush",
+    url: "/animations/Blush.vrma",
+    description: "Shy blushing body language",
+    category: "emotion",
+    loop: true,
+  },
+  {
+    id: "vrma-sad",
+    name: "Sad",
+    url: "/animations/Sad.vrma",
+    description: "Sad, downcast body animation",
+    category: "emotion",
+    loop: true,
+  },
+  {
+    id: "vrma-sleepy",
+    name: "Sleepy",
+    url: "/animations/Sleepy.vrma",
+    description: "Drowsy, dozing off animation",
+    category: "idle",
+    loop: true,
+  },
+  {
+    id: "vrma-surprised",
+    name: "Surprised",
+    url: "/animations/Surprised.vrma",
+    description: "Startled surprise reaction",
+    category: "emotion",
+    loop: false,
+  },
+  {
+    id: "vrma-thinking",
+    name: "Thinking (Animated)",
+    url: "/animations/Thinking.vrma",
+    description: "Animated thinking with natural movement",
+    category: "action",
+    loop: true,
+  },
+  {
+    id: "vrma-relax",
+    name: "Relaxing",
+    url: "/animations/Relax.vrma",
+    description: "Relaxed, calm idle animation",
+    category: "idle",
+    loop: true,
+  },
+
+  // ============================================
   // Other sources
   // ============================================
   {
     id: "vrma-mocopi",
     name: "Mocopi Idle",
     url: "/animations/sample-mocopi.vrma",
-    description: "Motion capture idle animation from mocopi",
+    description: "Motion capture idle animation from mocopi sensor",
     category: "idle",
     loop: true,
   },

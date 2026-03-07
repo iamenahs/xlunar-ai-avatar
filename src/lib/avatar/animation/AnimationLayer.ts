@@ -181,6 +181,13 @@ export class IdleBodyLayer implements AnimationLayer {
   priority = 50;
   enabled = true;
   
+  /** When true, auto-blink is paused (manual eye control active) */
+  suppressBlink = false;
+  /** When true, micro eye look is paused (manual eye control active) */
+  suppressLook = false;
+  /** When true, subtle expression drift is paused (manual expression active) */
+  suppressExpression = false;
+  
   private vrm: VRM | null = null;
   private elapsed = 0;
   
@@ -236,9 +243,24 @@ export class IdleBodyLayer implements AnimationLayer {
     
     this.elapsed += delta;
     
-    this.updateBlink(delta);
-    this.updateSubtleExpression(delta);
-    this.updateMicroLook(delta);
+    if (!this.suppressBlink) this.updateBlink(delta);
+    if (!this.suppressExpression) this.updateSubtleExpression(delta);
+    if (!this.suppressLook) this.updateMicroLook(delta);
+  }
+
+  /**
+   * Apply a manual look direction via the lookAt API.
+   * Yaw: negative=left, positive=right. Pitch: negative=down, positive=up.
+   */
+  applyManualLook(yaw: number, pitch: number): void {
+    if (!this.vrm?.lookAt) return;
+    try {
+      (this.vrm.lookAt as any).target = undefined;
+      (this.vrm.lookAt as any).autoUpdate = false;
+      this.vrm.lookAt.applier?.applyYawPitch(yaw, pitch);
+    } catch {
+      // LookAt not supported
+    }
   }
   
   private updateBlink(delta: number): void {

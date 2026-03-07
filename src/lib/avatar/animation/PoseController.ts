@@ -10,7 +10,8 @@
  * - No rotation accumulation bugs
  */
 
-import type { VRM, VRMHumanBoneName } from "@pixiv/three-vrm";
+import type { VRM, VRMHumanBoneName, VRMPose } from "@pixiv/three-vrm";
+import * as THREE from "three";
 import type {
   PosePreset,
   HandGesture,
@@ -135,11 +136,12 @@ export class PoseController {
 
   /**
    * Initialize with a VRM model.
-   * @param vrm      – the loaded VRM object
-   * @param fileUrl  – original model URL (used for GLB detection)
+   * @param vrm     – the loaded VRM object
+   * @param fileUrl – used to detect VRM version for rotation conversion
    */
   init(vrm: VRM, fileUrl?: string): void {
     this.vrm = vrm;
+    this.versionHandler = detectVrmVersion(vrm, fileUrl ?? "");
     this.motionTime = 0;
     this.elapsedTime = 0;
     this.boneStates.clear();
@@ -147,19 +149,25 @@ export class PoseController {
     this.currentPositionY = 0;
     this.positionVelocityY = 0;
     
-    // Ensure the normalized skeleton starts from its canonical rest pose
+    // Reset the normalized skeleton to identity (T-pose)
     if (vrm.humanoid) {
-      vrm.humanoid.resetNormalizedPose();
+      vrm.humanoid.setNormalizedPose({});
     }
     
-    // Detect VRM version and store the handler for rotation conversion
-    this.versionHandler = detectVrmVersion(vrm, fileUrl ?? "");
-
     // Initialize bone states from current VRM pose
     this.initializeBoneStates();
     
     // Apply default relaxed pose immediately (no transition on init)
     this.applyPoseImmediate(DEFAULT_RELAXED_POSE);
+  }
+
+  /**
+   * Convert rotation from authoring convention to device convention.
+   * VRM 0.x needs X and Z negated due to the internal 180° Y hip rotation.
+   * VRM 1.0 uses values as-is.
+   */
+  private convertRotation(degrees: [number, number, number]): [number, number, number] {
+    return this.versionHandler?.convertRotation(degrees) ?? degrees;
   }
   
   /**
@@ -174,7 +182,6 @@ export class PoseController {
       try {
         const bone = this.vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
         if (bone) {
-          bone.rotation.set(0, 0, 0);
           this.boneStates.set(boneName, {
             current: { x: 0, y: 0, z: 0 },
             target: { x: 0, y: 0, z: 0 },
@@ -182,7 +189,7 @@ export class PoseController {
           });
         }
       } catch {
-        // Bone not found
+        // Bone not found in this model
       }
     }
   }
@@ -216,50 +223,41 @@ export class PoseController {
   }
 
   /**
-   * Convert rotation from authoring convention to device convention.
-   * Delegates to the detected VRM version handler.
-   */
-  private convertRotation(degrees: [number, number, number]): [number, number, number] {
-    if (!this.versionHandler) return degrees;
-    return this.versionHandler.convertRotation(degrees);
-  }
-
-  /**
    * Apply a pose immediately (no transition)
    */
   private applyPoseImmediate(pose: Record<string, [number, number, number]>): void {
     if (!this.vrm?.humanoid) return;
+    
+    const vrmPose: VRMPose = {};
+    const euler = new THREE.Euler();
+    const quat = new THREE.Quaternion();
     
     for (const [boneName, rotation] of Object.entries(pose)) {
       const vrmBoneName = BONE_MAP[boneName];
       if (!vrmBoneName) continue;
       
       const converted = this.convertRotation(rotation);
+      const rx = degToRad(converted[0]);
+      const ry = degToRad(converted[1]);
+      const rz = degToRad(converted[2]);
       
-      try {
-        const bone = this.vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
-        if (bone) {
-          bone.rotation.set(
-            degToRad(converted[0]),
-            degToRad(converted[1]),
-            degToRad(converted[2])
-          );
-          
-          // Update bone state
-          const state = this.boneStates.get(boneName);
-          if (state) {
-            state.current.x = degToRad(converted[0]);
-            state.current.y = degToRad(converted[1]);
-            state.current.z = degToRad(converted[2]);
-            state.target = { ...state.current };
-            state.velocity = { x: 0, y: 0, z: 0 };
-          }
-        }
-      } catch {
-        // Bone not found
+      const state = this.boneStates.get(boneName);
+      if (state) {
+        state.current.x = rx;
+        state.current.y = ry;
+        state.current.z = rz;
+        state.target = { ...state.current };
+        state.velocity = { x: 0, y: 0, z: 0 };
       }
+      
+      euler.set(rx, ry, rz);
+      quat.setFromEuler(euler);
+      vrmPose[vrmBoneName] = {
+        rotation: [quat.x, quat.y, quat.z, quat.w] as [number, number, number, number],
+      };
     }
     
+    this.vrm.humanoid.setNormalizedPose(vrmPose);
     this.basePose = { ...pose };
   }
 
@@ -269,29 +267,23 @@ export class PoseController {
   applyPose(pose: PosePreset): void {
     if (!this.vrm?.humanoid) return;
     
-    // Both fromPose and toPose must be in device convention (converted)
+    // Both fromPose and toPose are in VRM normalized convention (degrees)
     const fromPose: Record<string, [number, number, number]> = {};
     for (const boneName of Object.keys({ ...this.basePose, ...pose.bones })) {
       const state = this.boneStates.get(boneName);
       if (state) {
-        // state.current is already in device convention radians
         fromPose[boneName] = [
           state.current.x / (Math.PI / 180),
           state.current.y / (Math.PI / 180),
           state.current.z / (Math.PI / 180),
         ];
       } else {
-        fromPose[boneName] = this.convertRotation(this.basePose[boneName] || [0, 0, 0]);
+        fromPose[boneName] = this.basePose[boneName] || [0, 0, 0];
       }
     }
     
-    const toPoseRaw = { ...this.basePose, ...pose.bones };
-    const toPose: Record<string, [number, number, number]> = {};
-    for (const [k, v] of Object.entries(toPoseRaw)) {
-      toPose[k] = this.convertRotation(v);
-    }
+    const toPose = { ...this.basePose, ...pose.bones };
     
-    // Set up transition
     this.poseTransition = {
       fromPose,
       toPose,
@@ -300,7 +292,6 @@ export class PoseController {
       easing: easeInOutCubic,
     };
     
-    // Store base pose in authoring convention (unconverted)
     this.basePose = { ...this.basePose, ...pose.bones };
   }
 
@@ -403,27 +394,27 @@ export class PoseController {
         ? [0.3, 0.4, 0.3]  // Thumb: metacarpal, proximal, distal
         : [0.5, 0.35, 0.15]; // Other fingers: proximal, intermediate, distal
       
+      // VRM 0.x negates X and Z axes due to internal 180° Y hip rotation
+      const isVrm0 = this.versionHandler?.version === "vrm0" || this.versionHandler?.version === "vroid-glb";
+      const xSign = isVrm0 ? 1 : -1;
+      const zSign = isVrm0 ? -1 : 1;
+
       for (let i = 0; i < bones.length; i++) {
         const boneName = bones[i];
         try {
           const bone = humanoid.getNormalizedBoneNode(boneName as any);
           if (bone) {
-            // Calculate curl angle for this joint
             const jointCurl = curl * maxCurl * curlDistribution[i] * 2.5;
             
             if (isThumb) {
-              // Thumb curls differently - more complex rotation
               if (i === 0) {
-                // Metacarpal: rotate towards palm
                 bone.rotation.y = side === "left" ? jointCurl * 0.5 : -jointCurl * 0.5;
-                bone.rotation.z = side === "left" ? jointCurl * 0.3 : -jointCurl * 0.3;
+                bone.rotation.z = (side === "left" ? jointCurl * 0.3 : -jointCurl * 0.3) * zSign;
               } else {
-                // Proximal and Distal: bend inward
-                bone.rotation.z = side === "left" ? jointCurl * 0.8 : -jointCurl * 0.8;
+                bone.rotation.z = (side === "left" ? jointCurl * 0.8 : -jointCurl * 0.8) * zSign;
               }
             } else {
-              // Other fingers curl around X axis (bend towards palm)
-              bone.rotation.x = jointCurl;
+              bone.rotation.x = xSign * jointCurl;
             }
           }
         } catch {
@@ -498,9 +489,15 @@ export class PoseController {
       const state = this.boneStates.get(boneName);
       
       if (state) {
-        state.target.x = degToRad(fromRotation[0] + (toRotation[0] - fromRotation[0]) * easedProgress);
-        state.target.y = degToRad(fromRotation[1] + (toRotation[1] - fromRotation[1]) * easedProgress);
-        state.target.z = degToRad(fromRotation[2] + (toRotation[2] - fromRotation[2]) * easedProgress);
+        const interpolated: [number, number, number] = [
+          fromRotation[0] + (toRotation[0] - fromRotation[0]) * easedProgress,
+          fromRotation[1] + (toRotation[1] - fromRotation[1]) * easedProgress,
+          fromRotation[2] + (toRotation[2] - fromRotation[2]) * easedProgress,
+        ];
+        const converted = this.convertRotation(interpolated);
+        state.target.x = degToRad(converted[0]);
+        state.target.y = degToRad(converted[1]);
+        state.target.z = degToRad(converted[2]);
       }
     }
     
@@ -601,23 +598,32 @@ export class PoseController {
         break;
       case "bounce":
         this.updateBouncePosition(time, amplitude, delta);
-        return; // Bounce affects position, not rotation
+        return;
       case "float":
         this.updateFloatPosition(time, amplitude, delta);
-        return; // Float affects position, not rotation
+        return;
       case "walk":
         this.calculateWalkingOffsets(time, params || {}, intensity, offsets);
         break;
+      case "fidget":
+        this.calculateFidgetOffsets(time, amplitude, intensity, offsets);
+        break;
+      case "nod":
+        this.calculateNodOffsets(time, amplitude, offsets);
+        break;
+      case "look":
+        this.calculateLookAroundOffsets(time, amplitude, offsets);
+        break;
+      case "dance":
+        this.calculateDanceOffsets(time, amplitude, intensity, offsets);
+        break;
       case "custom":
-        // Natural idle: combine breathing, sway, and head micro-movement
         this.calculateBreathingOffsets(time, amplitude * 0.6, offsets);
         this.calculateSwayOffsets(time * 0.7, amplitude * 0.3, offsets);
         this.calculateHeadMicroMovement(time, intensity, offsets);
         break;
     }
 
-    // Apply offsets to bone targets (base pose + offset), both in authoring
-    // convention, then convert to device convention.
     for (const [boneName, offset] of Object.entries(offsets)) {
       const basePoseRotation = this.basePose[boneName] || [0, 0, 0];
       const state = this.boneStates.get(boneName);
@@ -650,26 +656,26 @@ export class PoseController {
     
     // Chest expands forward and up, spine follows slightly
     offsets.chest = [
-      breathValue * amplitude * 0.4, // Forward tilt
+      breathValue * amplitude * 1.2,
       0,
       0
     ];
     offsets.spine = [
-      breathValue * amplitude * 0.2, // Slight forward
+      breathValue * amplitude * 0.6,
       0,
       0
     ];
     
-    // Very subtle shoulder rise during inhale (keep small to avoid drifting arms)
+    // Subtle shoulder rise during inhale
     offsets.leftUpperArm = [
       0,
       0,
-      -breathValue * amplitude * 0.08
+      -breathValue * amplitude * 0.25
     ];
     offsets.rightUpperArm = [
       0,
       0,
-      breathValue * amplitude * 0.08
+      breathValue * amplitude * 0.25
     ];
   }
 
@@ -834,6 +840,140 @@ export class PoseController {
   }
 
   /**
+   * Calculate fidgeting offsets — weight shifting, minor restlessness
+   * Uses multiple out-of-phase oscillations for organic randomness
+   */
+  private calculateFidgetOffsets(
+    time: number,
+    amplitude: number,
+    intensity: number,
+    offsets: Record<string, [number, number, number]>
+  ): void {
+    const slow1 = organicOscillation(time, 0.12);
+    const slow2 = organicOscillation(time * 1.3 + 1.7, 0.09);
+    const fast1 = Math.sin(time * 2.1) * 0.3;
+
+    offsets.spine = [
+      slow1 * amplitude * 0.3,
+      slow2 * amplitude * 0.2,
+      slow1 * amplitude * 0.5,
+    ];
+
+    offsets.head = [
+      slow2 * amplitude * 0.4 + fast1 * intensity,
+      slow1 * amplitude * 0.3,
+      slow2 * amplitude * 0.2,
+    ];
+
+    const armShift = slow1 * amplitude * 0.15;
+    offsets.leftUpperArm = [armShift, 0, -armShift * 0.5];
+    offsets.rightUpperArm = [-armShift, 0, armShift * 0.5];
+
+    this.calculateBreathingOffsets(time, amplitude * 0.4, offsets);
+  }
+
+  /**
+   * Calculate rhythmic nodding offsets — for active listening
+   */
+  private calculateNodOffsets(
+    time: number,
+    amplitude: number,
+    offsets: Record<string, [number, number, number]>
+  ): void {
+    const nodBase = Math.sin(time * Math.PI * 2 * 0.7);
+    const nodSmooth = nodBase * 0.7 + Math.sin(time * Math.PI * 2 * 1.4) * 0.3;
+
+    offsets.head = [
+      nodSmooth * amplitude,
+      Math.sin(time * 0.4) * amplitude * 0.1,
+      0,
+    ];
+    offsets.neck = [
+      nodSmooth * amplitude * 0.3,
+      0,
+      0,
+    ];
+
+    this.calculateBreathingOffsets(time, amplitude * 0.3, offsets);
+  }
+
+  /**
+   * Calculate look-around offsets — scanning the environment
+   */
+  private calculateLookAroundOffsets(
+    time: number,
+    amplitude: number,
+    offsets: Record<string, [number, number, number]>
+  ): void {
+    const yaw = organicOscillation(time, 0.15) * amplitude;
+    const pitch = organicOscillation(time * 0.7 + 2.0, 0.1) * amplitude * 0.3;
+    const neckFollow = 0.4;
+
+    offsets.head = [pitch, yaw, 0];
+    offsets.neck = [pitch * neckFollow, yaw * neckFollow, 0];
+
+    const bodyFollow = 0.15;
+    offsets.spine = [0, yaw * bodyFollow, 0];
+
+    this.calculateBreathingOffsets(time, amplitude * 0.15, offsets);
+  }
+
+  /**
+   * Calculate dance offsets — rhythmic body movement
+   * Combines hip sway, shoulder bounce, and arm movement
+   */
+  private calculateDanceOffsets(
+    time: number,
+    amplitude: number,
+    intensity: number,
+    offsets: Record<string, [number, number, number]>
+  ): void {
+    const beat = time * Math.PI * 2;
+    const hipSway = Math.sin(beat) * amplitude;
+    const bounce = Math.abs(Math.sin(beat * 2)) * amplitude * 0.5;
+    const shoulderRock = Math.sin(beat + 0.5) * amplitude * 0.4;
+
+    offsets.spine = [
+      bounce * 0.3,
+      hipSway * 0.3,
+      hipSway * 0.5,
+    ];
+
+    offsets.chest = [
+      -bounce * 0.2,
+      -hipSway * 0.2,
+      shoulderRock,
+    ];
+
+    offsets.head = [
+      -bounce * 0.15,
+      hipSway * 0.15,
+      0,
+    ];
+
+    const armBounce = bounce * intensity;
+    offsets.leftUpperArm = [
+      -armBounce * 3,
+      0,
+      Math.sin(beat + 1.0) * amplitude * 0.8,
+    ];
+    offsets.rightUpperArm = [
+      -armBounce * 3,
+      0,
+      -Math.sin(beat + 1.0) * amplitude * 0.8,
+    ];
+
+    offsets.leftLowerArm = [0, 0, Math.sin(beat * 2) * amplitude * 0.3 * intensity];
+    offsets.rightLowerArm = [0, 0, -Math.sin(beat * 2) * amplitude * 0.3 * intensity];
+
+    offsets.hips = [
+      0,
+      hipSway * 0.4,
+      hipSway * 0.3,
+    ];
+  }
+
+  /**
    * Update bounce position using smooth damp
    */
   private updateBouncePosition(time: number, amplitude: number, delta: number): void {
@@ -881,36 +1021,42 @@ export class PoseController {
   }
 
   /**
-   * Apply final bone rotations with smooth damping
+   * Apply final bone rotations with smooth damping.
+   * Uses vrm.humanoid.setNormalizedPose() with quaternions for correct
+   * bone transform transfer to the output (raw) skeleton.
    */
   private applyBoneRotations(delta: number): void {
     if (!this.vrm?.humanoid) return;
+    
+    const pose: VRMPose = {};
+    const euler = new THREE.Euler();
+    const quat = new THREE.Quaternion();
     
     for (const [boneName, state] of this.boneStates) {
       const vrmBoneName = BONE_MAP[boneName];
       if (!vrmBoneName) continue;
       
-      try {
-        const bone = this.vrm.humanoid.getNormalizedBoneNode(vrmBoneName);
-        if (!bone) continue;
-        
-        const velX = { value: state.velocity.x };
-        const velY = { value: state.velocity.y };
-        const velZ = { value: state.velocity.z };
-        
-        state.current.x = smoothDamp(state.current.x, state.target.x, velX, this.smoothTime, delta);
-        state.current.y = smoothDamp(state.current.y, state.target.y, velY, this.smoothTime, delta);
-        state.current.z = smoothDamp(state.current.z, state.target.z, velZ, this.smoothTime, delta);
-        
-        state.velocity.x = velX.value;
-        state.velocity.y = velY.value;
-        state.velocity.z = velZ.value;
-        
-        bone.rotation.set(state.current.x, state.current.y, state.current.z);
-      } catch {
-        // Bone not found
-      }
+      const velX = { value: state.velocity.x };
+      const velY = { value: state.velocity.y };
+      const velZ = { value: state.velocity.z };
+      
+      state.current.x = smoothDamp(state.current.x, state.target.x, velX, this.smoothTime, delta);
+      state.current.y = smoothDamp(state.current.y, state.target.y, velY, this.smoothTime, delta);
+      state.current.z = smoothDamp(state.current.z, state.target.z, velZ, this.smoothTime, delta);
+      
+      state.velocity.x = velX.value;
+      state.velocity.y = velY.value;
+      state.velocity.z = velZ.value;
+      
+      euler.set(state.current.x, state.current.y, state.current.z);
+      quat.setFromEuler(euler);
+      
+      pose[vrmBoneName] = {
+        rotation: [quat.x, quat.y, quat.z, quat.w] as [number, number, number, number],
+      };
     }
+    
+    this.vrm.humanoid.setNormalizedPose(pose);
   }
 
   /**

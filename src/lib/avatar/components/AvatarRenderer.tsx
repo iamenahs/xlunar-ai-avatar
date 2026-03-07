@@ -10,7 +10,7 @@ import React, { useRef, useEffect, Suspense } from "react";
 import * as THREE from "three";
 import { useFrame, useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
-import { VRMLoaderPlugin, VRM } from "@pixiv/three-vrm";
+import { VRMLoaderPlugin, VRM, VRMUtils } from "@pixiv/three-vrm";
 
 import type { AvatarTransform, AppearanceConfig, MouthAnimationConfig } from "../types";
 import type { PosePreset, HandGesture, BodyGesture, BodyMotion } from "../config/poses";
@@ -22,6 +22,7 @@ import { MotionSequencePlayer } from "../animation/MotionSequence";
 import { VrmaPlayer, createVrmaPlayer } from "../animation/VrmaPlayer";
 import { ExpressionController, createExpressionController } from "../animation/ExpressionController";
 import { detectVrmVersion } from "../loaders";
+import type { AvatarController } from "../controller/AvatarController";
 
 export interface AvatarRendererProps {
   /** Model appearance config (URL required) */
@@ -56,6 +57,8 @@ export interface AvatarRendererProps {
   amplitude?: number;
   /** Whether audio is playing */
   isPlaying?: boolean;
+  /** Optional AvatarController for programmatic control */
+  controller?: AvatarController;
 }
 
 /**
@@ -77,6 +80,7 @@ function AvatarInner({
   onLoad,
   amplitude = 0,
   isPlaying = false,
+  controller,
 }: AvatarRendererProps) {
   const groupRef = useRef<THREE.Group>(null);
   const controllerRef = useRef<AnimationController | null>(null);
@@ -98,7 +102,7 @@ function AvatarInner({
     GLTFLoader,
     appearance.modelUrl,
     (loader) => {
-      loader.register((parser) => new VRMLoaderPlugin(parser));
+      loader.register((parser) => new VRMLoaderPlugin(parser, { autoUpdateHumanBones: true }));
     }
   );
 
@@ -119,6 +123,12 @@ function AvatarInner({
     const sceneObj = vrm?.scene ?? gltf.scene;
     if (!sceneObj) return;
 
+    // Optimize VRM: combine skeletons so mesh deformation follows humanoid bones
+    if (vrm) {
+      VRMUtils.removeUnnecessaryVertices(gltf.scene);
+      VRMUtils.combineSkeletons(gltf.scene);
+    }
+
     // Detect VRM version and apply version-specific scene setup
     const handler = detectVrmVersion(vrm, appearance.modelUrl);
     const sceneRoot = handler.setupScene(sceneObj);
@@ -129,9 +139,9 @@ function AvatarInner({
 
     // Initialize animation controller
     if (vrm) {
-      const controller = createAnimationController();
-      controller.init(vrm, mouthConfig);
-      controllerRef.current = controller;
+      const animCtrl = createAnimationController();
+      animCtrl.init(vrm, mouthConfig);
+      controllerRef.current = animCtrl;
 
       // Initialize pose controller (pass fileUrl for GLB detection)
       const poseCtrl = createPoseController();
@@ -161,6 +171,56 @@ function AvatarInner({
       lastSequenceRef.current = null;
       lastVrmaUrlRef.current = null;
       lastExpressionRef.current = null;
+
+      // Register with AvatarController if provided
+      if (controller) {
+        controller._register({
+          setPose: (p) => { if (poseCtrl && p) poseCtrl.applyPose(p); },
+          setHandGesture: (g) => { if (poseCtrl && g) poseCtrl.applyHandGesture(g); },
+          setBodyGesture: (g) => { if (poseCtrl && g) poseCtrl.playBodyGesture(g); },
+          setBodyMotion: (m) => { if (poseCtrl && m) poseCtrl.setBodyMotion(m); },
+          setExpression: (e) => { if (exprController) exprController.setExpression(e); },
+          setVrma: (url, loop) => {
+            if (!vrmaPlayer) return;
+            if (url) {
+              vrmaPlayer.loadAnimation(url).then(() => {
+                vrmaPlayer.play(url, { loop: loop ?? true });
+              }).catch((err) => console.error("Failed to load VRMA:", err));
+            } else {
+              vrmaPlayer.stop();
+            }
+          },
+          setSequence: (seq) => {
+            if (!seqPlayer) return;
+            if (seq) {
+              seqPlayer.play(seq, {
+                onComplete: () => controller._onSequenceComplete(),
+              });
+            } else {
+              seqPlayer.stop();
+            }
+          },
+          setRawPose: (bones) => {
+            if (!poseCtrl) return;
+            poseCtrl.applyPose({
+              id: "_raw",
+              name: "Raw Pose",
+              description: "LLM-generated pose",
+              bones,
+            });
+          },
+          setRawExpression: (values) => {
+            if (!exprController) return;
+            for (const [name, state] of Object.entries(values)) {
+              if (typeof state === "number") {
+                exprController.setExpressionValue(name, state);
+              }
+            }
+          },
+          getVrmaPlaying: () => vrmaPlayer?.getIsPlaying() ?? false,
+          getSequencePlaying: () => seqPlayer?.getIsPlaying() ?? false,
+        });
+      }
     }
 
     // Notify parent
@@ -169,6 +229,7 @@ function AvatarInner({
     }
 
     return () => {
+      controller?._unregister();
       controllerRef.current?.dispose();
       controllerRef.current = null;
       poseControllerRef.current?.dispose();
@@ -178,7 +239,7 @@ function AvatarInner({
       vrmaPlayerRef.current?.dispose();
       vrmaPlayerRef.current = null;
     };
-  }, [gltf, vrm, mouthConfig, onLoad]);
+  }, [gltf, vrm, mouthConfig, onLoad, controller]);
 
   // Apply pose when it changes
   useEffect(() => {
@@ -264,12 +325,40 @@ function AvatarInner({
   // Apply expression when expression prop changes
   useEffect(() => {
     const exprController = expressionControllerRef.current;
+    const animCtrlInstance = controllerRef.current;
     if (!exprController) return;
 
     const exprId = expression?.id ?? null;
     if (exprId !== lastExpressionRef.current) {
       lastExpressionRef.current = exprId;
-      exprController.setExpression(expression ?? null);
+
+      const idleLayer = animCtrlInstance?.getLayer<import('../animation/AnimationLayer').IdleBodyLayer>('idle-body');
+
+      if (expression) {
+        const vals = expression.values;
+        const lookKeys = ['lookUp', 'lookDown', 'lookLeft', 'lookRight'];
+        const hasLook = lookKeys.some(k => k in vals);
+        const hasBlink = 'blink' in vals || 'blinkLeft' in vals || 'blinkRight' in vals;
+
+        if (idleLayer) {
+          idleLayer.suppressLook = hasLook;
+          idleLayer.suppressBlink = hasBlink;
+          idleLayer.suppressExpression = !!expression;
+        }
+
+        // Pass all expression values (including look directions) to the
+        // ExpressionController. Look direction expressions depend on whether
+        // the model has morph target bindings for lookUp/Down/Left/Right;
+        // they work on models that support them and are silently ignored on others.
+        exprController.setExpression(expression);
+      } else {
+        if (idleLayer) {
+          idleLayer.suppressLook = false;
+          idleLayer.suppressBlink = false;
+          idleLayer.suppressExpression = false;
+        }
+        exprController.setExpression(null);
+      }
     }
   }, [expression]);
 
@@ -320,7 +409,7 @@ function AvatarInner({
       poseControllerRef.current.update(delta);
     }
 
-    // 5. vrm.update() transfers normalized bones to output skeleton
+    // 5. vrm.update() transfers normalized bones, applies lookAt, and updates expressions
     if (vrmRef.current) {
       vrmRef.current.update(delta);
     }

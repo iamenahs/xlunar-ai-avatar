@@ -282,7 +282,7 @@ export const EYE_PRESETS: ExpressionPreset[] = [
     description: "Eyes looking upward",
     category: "eye",
     values: {
-      lookUp: 0.7,
+      lookDown: 0.7,
     },
     toggle: true,
   },
@@ -292,7 +292,7 @@ export const EYE_PRESETS: ExpressionPreset[] = [
     description: "Eyes looking downward",
     category: "eye",
     values: {
-      lookDown: 0.7,
+      lookUp: 0.7,
     },
     toggle: true,
   },

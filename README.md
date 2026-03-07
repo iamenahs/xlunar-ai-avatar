@@ -267,6 +267,19 @@ From [BOOTH](https://booth.pm/ja/items/5512385) by pixiv Inc. - **Free, requires
 | Mocopi Idle | vrma-loader-sample | MIT |
 | Test Animation | pixiv/three-vrm | MIT |
 
+### Where to Find VRMA Animations
+
+| Source | URL | Notes |
+|--------|-----|-------|
+| **VRoid Project (BOOTH)** | [booth.pm/ja/items/5512385](https://booth.pm/ja/items/5512385) | Free motion pack by pixiv Inc. (credit required) |
+| **BOOTH Marketplace** | [booth.pm](https://booth.pm/ja/search/VRMA) | Search "VRMA" — many free and paid animations |
+| **Mixamo** | [mixamo.com](https://www.mixamo.com/) | Free mocap library (FBX → convert to VRMA with [vrm-addon-for-blender](https://github.com/saturday06/VRM-Addon-for-Blender)) |
+| **vrm-viewer** | [github.com/tk256ailab/vrm-viewer](https://github.com/tk256ailab/vrm-viewer) | MIT-licensed VRMA samples |
+| **VRM Animation Test** | [github.com/pixiv/three-vrm](https://github.com/pixiv/three-vrm) | Sample VRMA from three-vrm repo |
+| **Animated VRM** | [github.com/vrm-c/vrm-specification](https://github.com/vrm-c/vrm-specification) | VRM Consortium sample animations |
+| **Rokoko** | [rokoko.com](https://www.rokoko.com/) | Motion capture → export FBX → convert to VRMA |
+| **ActorCore by Reallusion** | [actorcore.reallusion.com](https://actorcore.reallusion.com/) | Free motion packs (FBX → convert) |
+
 ### Adding Custom VRMA
 
 1. Place `.vrma` file in `public/animations/`

@@ -59,6 +59,19 @@ export type {
 // Hooks
 export { useAudioAnalyser, useAudioEnergy } from "./hooks";
 export type { UseAudioAnalyserReturn } from "./hooks";
+export { useAvatarController } from "./hooks";
+
+// Programmable Controller
+export { AvatarController } from "./controller";
+export { PostMessageBridge } from "./controller";
+export type {
+  AvatarCommand,
+  AvatarEventType,
+  AvatarEventDetail,
+  AvatarState,
+  AvatarPostMessage,
+  AvatarPostMessageResponse,
+} from "./controller";
 
 // Types
 export type {
